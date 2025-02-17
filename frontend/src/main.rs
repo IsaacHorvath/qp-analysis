@@ -1,20 +1,20 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use frontend::breakdown::Breakdown;
+use frontend::interface::Interface;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
     #[at("/")]
     Home,
     #[at("/breakdown")]
-    Breakdown,
+    Interface,
 }
 
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <h1>{ "Hello Frontend" }</h1> },
-        Route::Breakdown => html! { 
-            <Breakdown />
+        Route::Interface => html! { 
+            <Interface />
         },
     }
 }

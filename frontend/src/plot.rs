@@ -67,7 +67,7 @@ impl Component for Plot {
                 let mut chart= ChartBuilder::on(&root)
                     .set_label_area_size(LabelAreaPosition::Left, 40)
                     .set_label_area_size(LabelAreaPosition::Bottom, 40)
-                    .caption(&format!("{} Word Usage", ctx.props().breakdown_type), ("sans-serif", 40))
+                    .caption(&format!("{} word usage", ctx.props().breakdown_type), ("sans-serif", 40))
                     .build_cartesian_2d(x_axis.into_segmented(), 0f32..y_max)
                     .unwrap();
 
