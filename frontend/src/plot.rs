@@ -44,10 +44,14 @@ impl Component for Plot {
         match msg {
             PlotMsg::Redraw => {
                 let element : HtmlCanvasElement = self.canvas.cast().unwrap();
+                let breakdown_type = &ctx.props().breakdown_type;
                             
                 //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
-                element.set_width(700);
+                element.set_width(match *breakdown_type {
+                    BreakdownType::Speaker => 1400,
+                    _ => 700,
+                });
                 if ctx.props().loading {
                     element.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
                 }
@@ -59,7 +63,14 @@ impl Component for Plot {
                 let root = backend.into_drawing_area();
                 
                 root.fill(&WHITE).unwrap();
-                let data: Vec<BreakdownResponse> = ctx.props().data.clone();
+                let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
+                if *breakdown_type == BreakdownType::Speaker {
+                    data = data.into_iter().filter(|r| r.count > 0).collect();
+                }
+                data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
+                if data.len() > 10 {
+                     data = data[0..10].to_vec();
+                }
                 
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
                 let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
@@ -67,13 +78,11 @@ impl Component for Plot {
                 let mut chart= ChartBuilder::on(&root)
                     .set_label_area_size(LabelAreaPosition::Left, 40)
                     .set_label_area_size(LabelAreaPosition::Bottom, 40)
-                    .caption(&format!("{} word usage", ctx.props().breakdown_type), ("sans-serif", 40))
+                    .caption(&format!("{} word usage", *breakdown_type), ("sans-serif", 40))
                     .build_cartesian_2d(x_axis.into_segmented(), 0f32..y_max)
                     .unwrap();
 
                 chart.configure_mesh().draw().unwrap();
-
-                //let data = [25, 37, 15, 32, 45, 33, 32, 10, 0, 21, 5];
 
                 chart.draw_series(data.iter().map(|r| {
                     let x0 = SegmentValue::Exact(&r.name);

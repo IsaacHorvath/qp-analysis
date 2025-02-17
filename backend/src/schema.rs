@@ -12,6 +12,7 @@ diesel::table! {
         gender -> Integer,
         riding -> Integer,
         elected -> Integer,
+        total_words -> Integer,
     }
 }
 
@@ -73,6 +74,7 @@ diesel::table! {
 }
 
 diesel::define_sql_function!(fn count_words(x: Text, y: Varchar) -> Integer);
+diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Varchar);
 
 diesel::joinable!(speech_clean -> speaker (speaker));
 diesel::joinable!(speaker -> party (party));
@@ -88,5 +90,6 @@ diesel::allow_tables_to_appear_in_same_query!(
 diesel::allow_columns_to_appear_in_same_group_by_clause!(
     speaker::first_name,
     speaker::last_name,
+    speaker::total_words,
     party::colour,
 );

@@ -1,6 +1,7 @@
 use common::BreakdownType;
 use crate::breakdown::Breakdown;
 use yew::prelude::*;
+//use log::info;
 
 #[function_component(Interface)]
 pub fn word_input_component() -> Html {
@@ -27,16 +28,17 @@ pub fn word_input_component() -> Html {
     };
     
     html! {
-        <div style="margin: auto">
+        <div>
             <span>
                 <input type="text" value={(*input_value).clone()} onchange={on_input} />
                 <button onclick={on_click}>{ "Submit" }</button>
             </span>
             
-            <span>
+            <div style="display: flex; flex-wrap: wrap;">
                 <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()}/>
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()}/>
-            </span>
+                <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()}/>
+            </div>
         </div>
     }
 }

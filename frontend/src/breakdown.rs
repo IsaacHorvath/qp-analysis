@@ -16,7 +16,6 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
     let word_state = use_state(|| props.word.clone());
     let loading = use_state(|| false);
 
-    // Request `/api/hello` once
     {
         let data = data.clone();
         let loading = loading.clone();

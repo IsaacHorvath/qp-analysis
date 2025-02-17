@@ -40,7 +40,6 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
-        .route("/api/breakdown/speaker/{word}", get(speaker_breakdown))
         .route("/api/breakdown/{type}/{word}", get(breakdown))
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
@@ -50,7 +49,6 @@ async fn main() {
         opt.port,
     ));
 
-    println!("listening on http://{}", sock_addr);
     log::info!("listening on http://{}", sock_addr);
 
     let listener = tokio::net::TcpListener::bind(&sock_addr).await.unwrap();
@@ -62,9 +60,4 @@ async fn breakdown(Path((breakdown_type, word)): Path<(String, String)>) -> Json
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())
         .expect(format!("couldn't process breakdown type {}", breakdown_type).as_str());
     Json(get_breakdown_word_count(&mut connection, breakdown_type, &word))
-}
-
-async fn speaker_breakdown(Path(word): Path<String>) -> Json<Vec<(String, String, String, Option<i64>)>> {
-    let mut connection = establish_connection();
-    Json(get_speaker_word_count(&mut connection, &word))
 }
