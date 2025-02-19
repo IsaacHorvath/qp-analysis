@@ -1,8 +1,10 @@
 use plotters::prelude::*;
+use plotters::prelude::SegmentValue::CenterOf;
 use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
 use web_sys::HtmlCanvasElement;
 use common::{BreakdownType, BreakdownResponse};
+
 
 pub enum PlotMsg {
     Redraw,
@@ -49,8 +51,8 @@ impl Component for Plot {
                 //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
                 element.set_width(match *breakdown_type {
-                    BreakdownType::Speaker => 1400,
-                    _ => 700,
+                    BreakdownType::Speaker => 1800,
+                    _ => 900,
                 });
                 if ctx.props().loading {
                     element.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
@@ -60,9 +62,9 @@ impl Component for Plot {
                 }
 
                 let backend = CanvasBackend::with_canvas_object(element).unwrap();
-                let root = backend.into_drawing_area();
+                let drawing_area = backend.into_drawing_area();
+                drawing_area.fill(&WHITE).unwrap();
                 
-                root.fill(&WHITE).unwrap();
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
                 if *breakdown_type == BreakdownType::Speaker {
                     data = data.into_iter().filter(|r| r.count > 0).collect();
@@ -71,18 +73,35 @@ impl Component for Plot {
                 if data.len() > 10 {
                      data = data[0..10].to_vec();
                 }
+                data = data.iter().map(|r| BreakdownResponse {
+                    name: format!("{} - {}", r.name, r.count),
+                    colour: r.colour.clone(),
+                    count: r.count,
+                    score: r.score,
+                }).collect();
                 
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
                 let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
 
-                let mut chart= ChartBuilder::on(&root)
-                    .set_label_area_size(LabelAreaPosition::Left, 40)
-                    .set_label_area_size(LabelAreaPosition::Bottom, 40)
-                    .caption(&format!("{} word usage", *breakdown_type), ("sans-serif", 40))
+                let mut chart= ChartBuilder::on(&drawing_area)
+                    .set_left_and_bottom_label_area_size(50)
+                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40))
                     .build_cartesian_2d(x_axis.into_segmented(), 0f32..y_max)
                     .unwrap();
 
-                chart.configure_mesh().draw().unwrap();
+                chart.configure_mesh()
+                    .disable_x_mesh()
+                    .x_label_formatter(&|v| {
+                        if let CenterOf(s) = v {
+                            return format!("{}", s);
+                        } else {
+                            return "".to_string();
+                        }
+                    })
+                    .x_desc(format!("{}", *breakdown_type)) 
+                    .y_desc("words per 100,000")
+                    .draw()
+                    .unwrap();
 
                 chart.draw_series(data.iter().map(|r| {
                     let x0 = SegmentValue::Exact(&r.name);
@@ -93,6 +112,9 @@ impl Component for Plot {
                     bar
                 }))
                 .unwrap();
+                
+                //let test = String::from("NDP");
+                //drawing_area.draw(&Text::new("Test".to_string(), (1, 1), ("sans-serif", 10))).unwrap();
                 
                 false
             },
