@@ -1,5 +1,5 @@
 use axum::{
-    routing::get,
+    routing::put,
     extract::Path,
     Router,
     Json
@@ -12,7 +12,7 @@ use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use backend::db::*;
-use common::{BreakdownType, BreakdownResponse};
+use common::*;
 
 #[derive(Parser, Debug)]
 #[clap(name = "backend", about = "queens park analysis backend")]
@@ -40,7 +40,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
-        .route("/api/breakdown/{type}/{word}", get(breakdown))
+        .route("/api/breakdown/{type}", put(breakdown))
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
@@ -55,9 +55,15 @@ async fn main() {
     axum::serve(listener, app).await.expect("Unable to start server");
 }
 
-async fn breakdown(Path((breakdown_type, word)): Path<(String, String)>) -> Json<Vec<BreakdownResponse>> {
+async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<BreakdownRequest>) -> Json<Vec<BreakdownResponse>> {
     let mut connection = establish_connection();
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())
         .expect(format!("couldn't process breakdown type {}", breakdown_type).as_str());
-    Json(get_breakdown_word_count(&mut connection, breakdown_type, &word))
+    let search = payload.search
+        .to_lowercase()
+        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
+        
+    log::info!("searching for \"{}\"", search);
+
+    Json(get_breakdown_word_count(&mut connection, breakdown_type, &search))
 }

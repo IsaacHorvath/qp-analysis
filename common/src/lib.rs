@@ -33,7 +33,7 @@ impl fmt::Display for BreakdownType {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BreakdownRequest {
-    pub name: String,
+    pub search: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

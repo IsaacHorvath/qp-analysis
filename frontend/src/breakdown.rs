@@ -1,4 +1,4 @@
-use common::{BreakdownType, BreakdownResponse};
+use common::*;
 use crate::plot::Plot;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
@@ -13,7 +13,7 @@ pub struct BreakdownProps {
 #[function_component(Breakdown)]
 pub fn breakdown(props: &BreakdownProps) -> Html {
     let data = use_state(|| None);
-    let word_state = use_state(|| props.word.clone());
+    let word_state = use_state(|| props.word.clone()); // todo: rename all word to search or something
     let loading = use_state(|| false);
 
     {
@@ -26,8 +26,13 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 loading.set(true);
                 word_state.set(word.clone());
                 spawn_local(async move {
-                    let uri = format!("/api/breakdown/{}/{}", breakdown_type, word);
-                    let resp = Request::get(&uri).send().await.unwrap();
+                    
+                    let breakdown_request = BreakdownRequest { search: word };
+                    let uri = format!("/api/breakdown/{}", breakdown_type);
+                    let resp = Request::put(&uri)
+                        .header("Content-Type", "application/json")
+                        .json(&breakdown_request).expect("couldn't create request body")
+                        .send().await.unwrap();
                     let result = {
                         if !resp.ok() {
                             Err(format!(

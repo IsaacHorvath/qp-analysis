@@ -18,7 +18,6 @@ pub fn establish_connection() -> MysqlConnection {
 }
 
 pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
-    
     let filtered = speech_clean.filter(s_id.ne(117));
     let loaded = match breakdown_type {
         BreakdownType::Party => filtered
@@ -64,22 +63,3 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
         } })
         .collect()
 }
-
-// pub fn get_speaker_word_count(connection: &mut MysqlConnection, word: &str) -> Vec<(String, String, String, Option<i64>)> {
-//     use crate::schema::speaker::dsl::{first_name, last_name};
-//     use crate::schema::party::dsl::{party, colour};
-//     use crate::schema::count_words;
-//     
-//     speech_clean
-//         .filter(s_id.ne(117))
-//         .inner_join(speaker.inner_join(party))
-//         .group_by((first_name, last_name, colour))
-//         .select((
-//             first_name,
-//             last_name,
-//             colour,
-//             sum(count_words(text, word))
-//         ))
-//         .load(connection)
-//         .expect("error loading party word count")
-// }
