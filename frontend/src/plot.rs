@@ -36,7 +36,7 @@ impl Component for Plot {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! (
-            <div>
+            <div style="border: 2px solid #fee17d; border-radius: 20px; margin: 5px; padding: 5px">
                 <canvas ref = {self.canvas.clone()}/>
             </div>
         )
@@ -63,7 +63,7 @@ impl Component for Plot {
 
                 let backend = CanvasBackend::with_canvas_object(element).unwrap();
                 let drawing_area = backend.into_drawing_area();
-                drawing_area.fill(&WHITE).unwrap();
+                //drawing_area.fill(&WHITE).unwrap();
                 
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
                 if *breakdown_type == BreakdownType::Speaker {
@@ -85,12 +85,16 @@ impl Component for Plot {
 
                 let mut chart= ChartBuilder::on(&drawing_area)
                     .set_left_and_bottom_label_area_size(50)
-                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40))
+                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40, &WHITE))
                     .build_cartesian_2d(x_axis.into_segmented(), 0f32..y_max)
                     .unwrap();
 
+                let bold_line = hex::decode("97948f").expect("decoding colour failed");
+                let light_line = hex::decode("67635c").expect("decoding colour failed");
+
                 chart.configure_mesh()
                     .disable_x_mesh()
+                    .x_desc(format!("{}", *breakdown_type)) 
                     .x_label_formatter(&|v| {
                         if let CenterOf(s) = v {
                             return format!("{}", s);
@@ -98,8 +102,11 @@ impl Component for Plot {
                             return "".to_string();
                         }
                     })
-                    .x_desc(format!("{}", *breakdown_type)) 
+                    .x_label_style(&WHITE)
                     .y_desc("words per 100,000")
+                    .y_label_style(&WHITE)
+                    .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
+                    .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
                     .draw()
                     .unwrap();
 
