@@ -1,0 +1,7 @@
+/target
+/dist
+.env
+notes.txt
+.git
+dev.sh
+prod.sh

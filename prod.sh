@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 pushd frontend
-trunk build
+trunk build --release
 popd
 
-cargo run --bin backend --release -- --port 8080 --static-dir ./dist
+cargo run --bin backend --release -- --addr :: --port 8080 --static-dir ./dist
