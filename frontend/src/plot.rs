@@ -2,12 +2,10 @@ use plotters::prelude::*;
 use plotters::prelude::SegmentValue::CenterOf;
 use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
-use yew_hooks::prelude::*;
-use web_sys::{HtmlCanvasElement, Window};
+use web_sys::HtmlCanvasElement;
 use common::{BreakdownType, BreakdownResponse};
 use std::cmp::{max, min};
-use log::info;
-
+//use log::info;
 
 pub enum PlotMsg {
     Redraw,
@@ -40,8 +38,10 @@ impl Component for Plot {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! (
-            <div style="border: 2px solid #fee17d; border-radius: 20px; margin: 5px; padding: 5px">
-                <canvas ref = {self.canvas.clone()}/>
+            <div style="margin: 5px; overflow-y: auto">
+                <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content">
+                    <canvas ref = {self.canvas.clone()}/>
+                </div>
             </div>
         )
     }
@@ -52,13 +52,13 @@ impl Component for Plot {
                 let element : HtmlCanvasElement = self.canvas.cast().unwrap();
                 let breakdown_type = &ctx.props().breakdown_type;
                 
-                let width = ctx.props().window_width;
+                let width = ctx.props().window_width - 40.0;
                 // //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
                 element.set_width(match *breakdown_type {
-                    BreakdownType::Speaker => min(max(800, width as u32), 1800),
-                    BreakdownType::Party => min(max(300, width as u32), 900),
-                    BreakdownType::Gender => min(max(200, width as u32), 700),
+                    BreakdownType::Speaker => min(max(900, width as u32), 1800),
+                    BreakdownType::Party => min(max(600, width as u32), 900),
+                    BreakdownType::Gender => min(max(300, width as u32), 700),
                 });
                 //info!("{} {}", height, width);
                 // element.set_height(500);
@@ -78,8 +78,10 @@ impl Component for Plot {
                 //drawing_area.fill(&WHITE).unwrap();
                 
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
+                let mut label_size = (width.sqrt() / 2.5) as u32;
                 if *breakdown_type == BreakdownType::Speaker {
                     data = data.into_iter().filter(|r| r.count > 0).collect();
+                    label_size = label_size - 4;
                 }
                 data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
                 if data.len() > 10 {
@@ -104,7 +106,7 @@ impl Component for Plot {
                 let bold_line = hex::decode("97948f").expect("decoding colour failed");
                 let light_line = hex::decode("67635c").expect("decoding colour failed");
 
-                let label_size = (width.sqrt() / 2.5) as u32;
+                label_size = max(label_size, 8);
                 chart.configure_mesh()
                     .disable_x_mesh()
                     .x_desc(format!("{}", *breakdown_type)) 
