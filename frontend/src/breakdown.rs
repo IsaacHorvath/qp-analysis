@@ -3,6 +3,7 @@ use crate::plot::Plot;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use yew_hooks::prelude::use_window_size;
 
 #[derive(Properties, PartialEq)]
 pub struct BreakdownProps {
@@ -15,6 +16,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
     let data = use_state(|| None);
     let word_state = use_state(|| props.word.clone()); // todo: rename all word to search or something
     let loading = use_state(|| false);
+    let window_size = use_window_size();
 
     {
         let data = data.clone();
@@ -67,6 +69,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                     breakdown_type={props.breakdown_type.clone()}
                     data={breakdown_data.clone()}
                     loading={*loading}
+                    window_width={window_size.0 as u32} 
                 />
             }
         }

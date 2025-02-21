@@ -2,8 +2,11 @@ use plotters::prelude::*;
 use plotters::prelude::SegmentValue::CenterOf;
 use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
-use web_sys::HtmlCanvasElement;
+use yew_hooks::prelude::*;
+use web_sys::{HtmlCanvasElement, Window};
 use common::{BreakdownType, BreakdownResponse};
+use std::cmp::{max, min};
+use log::info;
 
 
 pub enum PlotMsg {
@@ -16,6 +19,7 @@ pub struct PlotProps {
     pub breakdown_type: BreakdownType,
     pub data: Vec<BreakdownResponse>,
     pub loading: bool,
+    pub window_width: u32,
 }
 
 pub struct Plot {
@@ -47,13 +51,21 @@ impl Component for Plot {
             PlotMsg::Redraw => {
                 let element : HtmlCanvasElement = self.canvas.cast().unwrap();
                 let breakdown_type = &ctx.props().breakdown_type;
-                            
-                //let rect = element.get_bounding_client_rect();
+                
+                let width = ctx.props().window_width;
+                // //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
                 element.set_width(match *breakdown_type {
-                    BreakdownType::Speaker => 1800,
-                    _ => 900,
+                    BreakdownType::Speaker => min(max(800, width), 1800),
+                    BreakdownType::Party => min(max(300, width), 900),
+                    BreakdownType::Gender => min(max(200, width), 700),
                 });
+                //info!("{} {}", height, width);
+                // element.set_height(500);
+                // element.set_width(match *breakdown_type {
+                //      BreakdownType::Speaker => 1800,
+                //      _ => 900,
+                //  }); 
                 if ctx.props().loading {
                     element.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
                 }
