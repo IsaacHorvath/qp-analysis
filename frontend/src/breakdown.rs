@@ -69,7 +69,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                     breakdown_type={props.breakdown_type.clone()}
                     data={breakdown_data.clone()}
                     loading={*loading}
-                    window_width={window_size.0 as u32} 
+                    window_width={window_size.0} 
                 />
             }
         }

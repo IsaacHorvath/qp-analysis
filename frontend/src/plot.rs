@@ -19,7 +19,7 @@ pub struct PlotProps {
     pub breakdown_type: BreakdownType,
     pub data: Vec<BreakdownResponse>,
     pub loading: bool,
-    pub window_width: u32,
+    pub window_width: f64,
 }
 
 pub struct Plot {
@@ -56,9 +56,9 @@ impl Component for Plot {
                 // //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
                 element.set_width(match *breakdown_type {
-                    BreakdownType::Speaker => min(max(800, width), 1800),
-                    BreakdownType::Party => min(max(300, width), 900),
-                    BreakdownType::Gender => min(max(200, width), 700),
+                    BreakdownType::Speaker => min(max(800, width as u32), 1800),
+                    BreakdownType::Party => min(max(300, width as u32), 900),
+                    BreakdownType::Gender => min(max(200, width as u32), 700),
                 });
                 //info!("{} {}", height, width);
                 // element.set_height(500);
@@ -104,9 +104,11 @@ impl Component for Plot {
                 let bold_line = hex::decode("97948f").expect("decoding colour failed");
                 let light_line = hex::decode("67635c").expect("decoding colour failed");
 
+                let label_size = (width.sqrt() / 2.5) as u32;
                 chart.configure_mesh()
                     .disable_x_mesh()
                     .x_desc(format!("{}", *breakdown_type)) 
+                    .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
                     .x_label_formatter(&|v| {
                         if let CenterOf(s) = v {
                             return format!("{}", s);
@@ -114,7 +116,6 @@ impl Component for Plot {
                             return "".to_string();
                         }
                     })
-                    .x_label_style(&WHITE)
                     .y_desc("words per 100,000")
                     .y_label_style(&WHITE)
                     .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
