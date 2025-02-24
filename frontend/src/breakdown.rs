@@ -5,23 +5,29 @@ use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
 
+#[derive(PartialEq, Clone)]
+pub struct Args {
+  pub word: String,
+  pub show_counts: bool,
+}
+
 #[derive(Properties, PartialEq)]
 pub struct BreakdownProps {
   pub breakdown_type: BreakdownType,
-  pub word: String,
+  pub args: Args,
 }
 
 #[function_component(Breakdown)]
 pub fn breakdown(props: &BreakdownProps) -> Html {
     let data = use_state(|| None);
-    let word_state = use_state(|| props.word.clone()); // todo: rename all word to search or something
+    let word_state = use_state(|| props.args.word.clone()); // todo: rename all word to search or something
     let loading = use_state(|| false);
     let window_size = use_window_size();
 
     {
         let data = data.clone();
         let loading = loading.clone();
-        let word = props.word.clone();
+        let word = props.args.word.clone();
         let breakdown_type = props.breakdown_type.clone();
         use_effect(move || {
             if (*word_state) != word {
@@ -68,6 +74,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 <Plot
                     breakdown_type={props.breakdown_type.clone()}
                     data={breakdown_data.clone()}
+                    show_counts={props.args.show_counts}
                     loading={*loading}
                     window_width={window_size.0} 
                 />
