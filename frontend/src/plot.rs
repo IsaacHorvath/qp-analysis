@@ -113,6 +113,7 @@ impl Component for Plot {
                 let light_line = hex::decode("67635c").unwrap();
 
                 label_size = max(label_size, 8);
+                let desc_style = TextStyle::from(("sans-serif", 16).into_font()).color(&WHITE);
                 chart.configure_mesh()
                     .disable_x_mesh()
                     .x_desc(format!("{}", *breakdown_type)) 
@@ -126,26 +127,30 @@ impl Component for Plot {
                     })
                     .y_desc("word count per 100,000")
                     .y_label_style(&WHITE)
+                    .axis_desc_style(desc_style.clone())
                     .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
                     .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
                     .draw()
                     .unwrap();
                 
-                if (show_counts) {
+                if show_counts {
                     chart
                         .configure_secondary_axes()
                         .y_desc("total word count")
                         .label_style(&WHITE)
+                        .axis_desc_style(desc_style)
                         .y_label_formatter(&|v| { format!("{}", *v as u32) })
                         .draw()
                         .unwrap();
                 }
 
+                // use the secondary series to allow for fine-tuned x values despite segmentation
                 chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                     let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
                     let s_height = r.score * (c_max / y_max);
-                    let right = i as f32 + if show_counts {0.49} else {0.85};
-                    let bar = Rectangle::new([(i as f32 + 0.15, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
+                    let left = i as f32 + if show_counts {0.15} else {0.20};
+                    let right = i as f32 + if show_counts {0.49} else {0.80};
+                    let bar = Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
                     bar
                 }))
                 .unwrap();
@@ -153,8 +158,6 @@ impl Component for Plot {
                 if (show_counts) {
                     chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                         let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                        //brighten(&mut rgb);
-                        //let c_height = r.count as f32 * (y_max / (c_max as f32));
                         let bar = Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
                         bar
                     }))
@@ -176,10 +179,4 @@ impl Component for Plot {
         ctx.link().send_message(PlotMsg::Redraw);
         true
     }
-}
-
-fn brighten(rgb: &mut [u8]) {
-    rgb[0] = max((rgb[0] as i16) - 100, 0) as u8;
-    rgb[1] = max((rgb[1] as i16) - 100, 0) as u8;
-    rgb[2] = max((rgb[2] as i16) - 100, 0) as u8;
 }

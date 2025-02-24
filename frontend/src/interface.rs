@@ -7,7 +7,7 @@ use log::info;
 pub fn word_input_component() -> Html {
     let input_value = use_state(|| String::from(""));
     let checkbox_value = use_state(|| false);
-    let args = use_state(|| Args { word: String::from(""), show_counts: false } ); //todo use object instead of tuple
+    let args = use_state(|| Args { word: String::from(""), show_counts: false } ); // one wrapping arg prop seems necessary to not update twice
     
     let on_input = {
         let input_value = input_value.clone();
