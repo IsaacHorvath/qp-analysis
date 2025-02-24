@@ -51,6 +51,7 @@ diesel::table! {
     speech_clean (id) {
         id -> Integer,
         speaker -> Integer,
+        speech -> Integer,
         text -> Text,
         start -> Datetime,
         end -> Datetime,
@@ -79,15 +80,18 @@ diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Va
 diesel::joinable!(speech_clean -> speaker (speaker));
 diesel::joinable!(speaker -> party (party));
 diesel::joinable!(speaker -> gender (gender));
+diesel::joinable!(speech_clean -> speech (speech));
 
 diesel::allow_tables_to_appear_in_same_query!(
     speech_clean,
+    speech,
     speaker,
     party,
     gender,
 );
 
 diesel::allow_columns_to_appear_in_same_group_by_clause!(
+    speaker::id,
     speaker::first_name,
     speaker::last_name,
     speaker::total_words,

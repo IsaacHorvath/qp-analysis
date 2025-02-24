@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::fmt;
+use time::PrimitiveDateTime;
+
 
 #[derive(Clone, PartialEq)]
 pub enum BreakdownType {
@@ -32,14 +34,22 @@ impl fmt::Display for BreakdownType {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct BreakdownRequest {
+pub struct DataRequest {
     pub search: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BreakdownResponse {
+    pub id: i32,
     pub name: String,
     pub colour: String,
     pub count: i32,
     pub score: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct SpeechResponse {
+    pub text: String,
+    pub start: PrimitiveDateTime,
+    pub end: PrimitiveDateTime,
 }

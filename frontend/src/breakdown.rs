@@ -29,7 +29,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 word_state.set(word.clone());
                 spawn_local(async move {
                     
-                    let breakdown_request = BreakdownRequest { search: word };
+                    let breakdown_request = DataRequest { search: word };
                     let uri = format!("/api/breakdown/{}", breakdown_type);
                     let resp = Request::put(&uri)
                         .header("Content-Type", "application/json")

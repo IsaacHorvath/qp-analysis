@@ -5,7 +5,7 @@ use yew::prelude::*;
 use web_sys::HtmlCanvasElement;
 use common::{BreakdownType, BreakdownResponse};
 use std::cmp::{max, min};
-//use log::info;
+use log::info;
 
 pub enum PlotMsg {
     Redraw,
@@ -88,6 +88,7 @@ impl Component for Plot {
                      data = data[0..10].to_vec();
                 }
                 data = data.iter().map(|r| BreakdownResponse {
+                    id: r.id,
                     name: format!("{} - {}", r.name, r.count),
                     colour: r.colour.clone(),
                     count: r.count,
@@ -96,15 +97,16 @@ impl Component for Plot {
                 
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
                 let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
+                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap(); 
 
                 let mut chart= ChartBuilder::on(&drawing_area)
                     .set_left_and_bottom_label_area_size(50)
                     .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40, &WHITE))
-                    .build_cartesian_2d(x_axis.into_segmented(), 0f32..y_max)
-                    .unwrap();
+                    .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
+                    .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max as f32);
 
-                let bold_line = hex::decode("97948f").expect("decoding colour failed");
-                let light_line = hex::decode("67635c").expect("decoding colour failed");
+                let bold_line = hex::decode("97948f").unwrap();
+                let light_line = hex::decode("67635c").unwrap();
 
                 label_size = max(label_size, 8);
                 chart.configure_mesh()
@@ -125,13 +127,28 @@ impl Component for Plot {
                     .draw()
                     .unwrap();
 
-                chart.draw_series(data.iter().map(|r| {
-                    let x0 = SegmentValue::Exact(&r.name);
-                    let x1 = SegmentValue::CenterOf(&r.name);
+                chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                     let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                    let mut bar = Rectangle::new([(x0, 0.0), (x1, r.score)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
-                    bar.set_margin(0, 0, 5, 5);
+                    let bar = Rectangle::new([(i as f32 + 0.15, 0.0), (i as f32 + 0.49, r.score)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
                     bar
+                }))
+                .unwrap();
+                
+                chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
+                    let mut rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                    brighten(&mut rgb);
+                    let c_height = r.count as f32 * (y_max / (c_max as f32));
+                    let bar = Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, c_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
+                    bar
+                }))
+                .unwrap();
+
+                chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
+                    let count = Text::new(r.name.clone(), ((i as f32) + 0.5, 10.0), ("sans-serif", 10));
+                    //let mut bar = EmptyElement::at((x1, 0.0))
+                    //    + Rectangle::new([(-10, 0), (10, 150)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
+                    //bar.set_margin(0, 0, 5, 5);
+                    count
                 }))
                 .unwrap();
                 
@@ -148,4 +165,10 @@ impl Component for Plot {
         ctx.link().send_message(PlotMsg::Redraw);
         true
     }
+}
+
+fn brighten(rgb: &mut [u8]) {
+    rgb[0] = min((rgb[0] as u32) - 40, 255) as u8;
+    rgb[1] = min((rgb[1] as u32) - 40, 255) as u8;
+    rgb[2] = min((rgb[2] as u32) - 40, 255) as u8;
 }
