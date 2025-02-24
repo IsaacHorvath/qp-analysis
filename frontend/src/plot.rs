@@ -87,23 +87,25 @@ impl Component for Plot {
                 if data.len() > 10 {
                      data = data[0..10].to_vec();
                 }
-                data = data.iter().map(|r| BreakdownResponse {
-                    id: r.id,
-                    name: format!("{} - {}", r.name, r.count),
-                    colour: r.colour.clone(),
-                    count: r.count,
-                    score: r.score,
-                }).collect();
+                // data = data.iter().map(|r| BreakdownResponse {
+                //     id: r.id,
+                //     name: format!("{} - {}", r.name, r.count),
+                //     colour: r.colour.clone(),
+                //     count: r.count,
+                //     score: r.score,
+                // }).collect();
                 
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
                 let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
-                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap(); 
+                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap() as f32; 
 
                 let mut chart= ChartBuilder::on(&drawing_area)
-                    .set_left_and_bottom_label_area_size(50)
+                    .x_label_area_size(40)
+                    .y_label_area_size(60) //todo use log or text length to find out how much space we need for these
+                    .right_y_label_area_size(60)
                     .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40, &WHITE))
                     .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
-                    .set_secondary_coord(0.0..data.len() as f32, 0.0..y_max as f32);
+                    .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max);
 
                 let bold_line = hex::decode("97948f").unwrap();
                 let light_line = hex::decode("67635c").unwrap();
@@ -120,40 +122,42 @@ impl Component for Plot {
                             return "".to_string();
                         }
                     })
-                    .y_desc("words per 100,000")
+                    .y_desc("word count per 100,000")
                     .y_label_style(&WHITE)
                     .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
                     .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
                     .draw()
                     .unwrap();
+                
+                 chart
+                    .configure_secondary_axes()
+                    .y_desc("total word count")
+                    .label_style(&WHITE)
+                    .y_label_formatter(&|v| { format!("{}", *v as u32) })
+                    .draw()
+                    .unwrap();
 
                 chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                     let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                    let bar = Rectangle::new([(i as f32 + 0.15, 0.0), (i as f32 + 0.49, r.score)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
+                    let s_height = r.score * (c_max / y_max);
+                    let bar = Rectangle::new([(i as f32 + 0.15, 0.0), (i as f32 + 0.49, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
                     bar
                 }))
                 .unwrap();
                 
                 chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                     let mut rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                    brighten(&mut rgb);
-                    let c_height = r.count as f32 * (y_max / (c_max as f32));
-                    let bar = Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, c_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
+                    //brighten(&mut rgb);
+                    //let c_height = r.count as f32 * (y_max / (c_max as f32));
+                    let bar = Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
                     bar
                 }))
                 .unwrap();
 
-                chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
-                    let count = Text::new(r.name.clone(), ((i as f32) + 0.5, 10.0), ("sans-serif", 10));
-                    //let mut bar = EmptyElement::at((x1, 0.0))
-                    //    + Rectangle::new([(-10, 0), (10, 150)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
-                    //bar.set_margin(0, 0, 5, 5);
-                    count
-                }))
-                .unwrap();
-                
-                //let test = String::from("NDP");
-                //drawing_area.draw(&Text::new("Test".to_string(), (1, 1), ("sans-serif", 10))).unwrap();
+                // chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
+                //     Text::new(r.name.clone(), ((i as f32) + 0.5, 10.0), ("sans-serif", 10))
+                // }))
+                // .unwrap();
                 
                 false
             },
@@ -168,7 +172,7 @@ impl Component for Plot {
 }
 
 fn brighten(rgb: &mut [u8]) {
-    rgb[0] = min((rgb[0] as u32) - 40, 255) as u8;
-    rgb[1] = min((rgb[1] as u32) - 40, 255) as u8;
-    rgb[2] = min((rgb[2] as u32) - 40, 255) as u8;
+    rgb[0] = max((rgb[0] as i16) - 100, 0) as u8;
+    rgb[1] = max((rgb[1] as i16) - 100, 0) as u8;
+    rgb[2] = max((rgb[2] as i16) - 100, 0) as u8;
 }
