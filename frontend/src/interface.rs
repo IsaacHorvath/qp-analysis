@@ -43,19 +43,19 @@ pub fn word_input_component() -> Html {
             //     <button onclick={submit} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #ffffff; margin: 5px;">{ "Submit" }</button>
             // </span>
             
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; color: #ffeba9">
-                <form onsubmit={submit}>
-                    <span style="margin-inline: 10px">
+            <div >
+                <form style="display: flex; flex-wrap: wrap; justify-content: center; color: #ffeba9" onsubmit={submit}>
+                    <div style="align-self: center; margin-inline: 10px">
                         <label for="word_input"> {"search term:"}</label>
                         <input type="text" id="word_input" value={(*input_value).clone()} onchange={on_input} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #ffffff; margin: 5px" />
-                    </span>
-                    <span style="margin-inline: 10px">
+                    </div>
+                    <div style="align-self: center; margin-inline: 10px">
                         <label for="show_counts"> {"show total counts:"}</label>
                         <input type="checkbox" id="show_counts" onclick={on_show_counts}/>
-                    </span>
-                    <span style="margin-inline: 10px">
+                    </div>
+                    <div style="align-self: center; margin-inline: 10px">
                         <input type="submit" value="Submit" style="background-color: #575757; border-color: #575757; color: #ffffff; border-radius: 10px; margin: 5px; padding: 3px" />
-                    </span>
+                    </div>
                 </form>
             </div>
             
