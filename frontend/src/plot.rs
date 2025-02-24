@@ -103,7 +103,7 @@ impl Component for Plot {
                     .set_left_and_bottom_label_area_size(50)
                     .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40, &WHITE))
                     .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
-                    .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max as f32);
+                    .set_secondary_coord(0.0..data.len() as f32, 0.0..y_max as f32);
 
                 let bold_line = hex::decode("97948f").unwrap();
                 let light_line = hex::decode("67635c").unwrap();
