@@ -38,11 +38,6 @@ pub fn word_input_component() -> Html {
     
     html! {
         <div style="background-color: #121212">
-            // <span style="display: flex; flex-wrap: wrap; justify-content: center">
-            //     <input type="text" value={(*input_value).clone()} onchange={on_input} style="background-color: #282828; border-color: #282828; border-radius: 10px; color: #ffffff; margin: 5px" />
-            //     <button onclick={submit} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #ffffff; margin: 5px;">{ "Submit" }</button>
-            // </span>
-            
             <div >
                 <form style="display: flex; flex-wrap: wrap; justify-content: center; color: #ffeba9" onsubmit={submit}>
                     <div style="align-self: center; margin-inline: 10px">
@@ -63,8 +58,6 @@ pub fn word_input_component() -> Html {
                 <Breakdown breakdown_type={BreakdownType::Party} args={(*args).clone()} />
                 <Breakdown breakdown_type={BreakdownType::Gender} args={(*args).clone()} />
                 <Breakdown breakdown_type={BreakdownType::Speaker} args={(*args).clone()} />
-                // <Breakdown breakdown_type={BreakdownType::Gender} word={(*args).0.clone()} show_counts={(*args).1} />
-                // <Breakdown breakdown_type={BreakdownType::Speaker} word={(*args).0.clone()} show_counts={(*args).1} />
             </div>
         </div>
     }

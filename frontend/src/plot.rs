@@ -9,6 +9,7 @@ use log::info;
 
 pub enum PlotMsg {
     Redraw,
+    Clicked(MouseEvent),
     Nothing,
 }
 
@@ -21,8 +22,17 @@ pub struct PlotProps {
     pub window_width: f64,
 }
 
+struct CoordMapping {
+    top: i32,
+    left: i32,
+    bottom: i32,
+    right: i32,
+    id: i32
+}
+
 pub struct Plot {
     canvas: NodeRef,
+    coord_mappings: Vec<CoordMapping>,
 }
 
 impl Component for Plot {
@@ -33,15 +43,18 @@ impl Component for Plot {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_message(PlotMsg::Redraw);
         Plot {
-            canvas : NodeRef::default(),
+            canvas: NodeRef::default(),
+            coord_mappings: vec![],
         }       
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let on_click = ctx.link().callback(|e: MouseEvent| PlotMsg::Clicked(e));
+        
         html! (
             <div style="margin: 5px; overflow-y: auto">
                 <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content">
-                    <canvas ref = {self.canvas.clone()}/>
+                    <canvas onclick={on_click} ref = {self.canvas.clone()}/>
                 </div>
             </div>
         )
@@ -57,16 +70,10 @@ impl Component for Plot {
                 // //let rect = element.get_bounding_client_rect();
                 element.set_height(500);
                 element.set_width(match *breakdown_type {
-                    BreakdownType::Speaker => min(max(900, width as u32), 1800),
+                    BreakdownType::Speaker => min(max(900, width as u32), 1800), //todo width dependent on num speakers
                     BreakdownType::Party => min(max(600, width as u32), 900),
                     BreakdownType::Gender => min(max(300, width as u32), 700),
                 });
-                //info!("{} {}", height, width);
-                // element.set_height(500);
-                // element.set_width(match *breakdown_type {
-                //      BreakdownType::Speaker => 1800,
-                //      _ => 900,
-                //  }); 
                 if ctx.props().loading {
                     element.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
                 }
@@ -88,13 +95,6 @@ impl Component for Plot {
                 if data.len() > 10 {
                      data = data[0..10].to_vec();
                 }
-                // data = data.iter().map(|r| BreakdownResponse {
-                //     id: r.id,
-                //     name: format!("{} - {}", r.name, r.count),
-                //     colour: r.colour.clone(),
-                //     count: r.count,
-                //     score: r.score,
-                // }).collect();
                 
                 let show_counts = ctx.props().show_counts;
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
@@ -143,32 +143,47 @@ impl Component for Plot {
                         .draw()
                         .unwrap();
                 }
+                
+                self.coord_mappings = vec![];
+                for (i, r) in data.iter().enumerate() {
+                    let left = i as f32 + if show_counts {0.15} else {0.20};
+                    let right = i as f32 + if show_counts {0.85} else {0.80};
+                    let mut top = r.score * (c_max / y_max);
+                    if show_counts { top = f32::max(r.count as f32, top) }
+                    let tl = chart.borrow_secondary().backend_coord(&(left, top));
+                    let br = chart.borrow_secondary().backend_coord(&(right, 0.0));
+                    self.coord_mappings.push(CoordMapping { left: tl.0, top: tl.1, right: br.0, bottom: br.1, id: r.id });
+                }
 
                 // use the secondary series to allow for fine-tuned x values despite segmentation
                 chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
-                    let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
                     let s_height = r.score * (c_max / y_max);
                     let left = i as f32 + if show_counts {0.15} else {0.20};
                     let right = i as f32 + if show_counts {0.49} else {0.80};
-                    let bar = Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
-                    bar
+                    
+                    let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                    Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled())
                 }))
                 .unwrap();
                 
-                if (show_counts) {
+                if show_counts {
                     chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                         let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                        let bar = Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled());
-                        bar
+                        Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled())
                     }))
                     .unwrap();
                 }
-
-                // chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
-                //     Text::new(r.name.clone(), ((i as f32) + 0.5, 10.0), ("sans-serif", 10))
-                // }))
-                // .unwrap();
                 
+                false
+            },
+            PlotMsg::Clicked(e) => {
+                for cm in &self.coord_mappings {
+                    let x = e.offset_x();
+                    let y = e.offset_y();
+                    if x > cm.left && x < cm.right && y > cm.top && y < cm.bottom {
+                        info!("{} {} {}", x, y, cm.id);
+                    }
+                }
                 false
             },
             _ => true,
