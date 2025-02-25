@@ -79,6 +79,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                                         <SpeechBox
                                             start={speech.start}
                                             end={speech.end}
+                                            link={speech.link}
                                             text={speech.text}
                                             word={props.word.clone()}
                                         />

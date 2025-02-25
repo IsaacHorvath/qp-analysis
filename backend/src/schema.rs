@@ -41,53 +41,36 @@ diesel::table! {
     speech (id) {
         id -> Integer,
         speaker -> Integer,
+        transcript -> Integer,
         text -> Text,
+        clean_text -> Text,
         start -> Datetime,
         end -> Datetime,
     }
 }
 
 diesel::table! {
-    speech_clean (id) {
-        id -> Integer,
-        speaker -> Integer,
-        speech -> Integer,
-        text -> Text,
-        start -> Datetime,
-        end -> Datetime,
-    }
-}
-
-diesel::table! {
-    word (id) {
+    transcript (id) {
         id -> Integer,
         #[max_length = 100]
-        text -> Varchar,
-    }
-}
-
-diesel::table! {
-    word_count (speech, word) {
-        speech -> Integer,
-        word -> Integer,
-        count -> Integer,
+        link -> Varchar,
     }
 }
 
 diesel::define_sql_function!(fn count_words(x: Text, y: Varchar) -> Integer);
 diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Varchar);
 
-diesel::joinable!(speech_clean -> speaker (speaker));
+diesel::joinable!(speech -> speaker (speaker));
+diesel::joinable!(speech -> transcript (transcript));
 diesel::joinable!(speaker -> party (party));
 diesel::joinable!(speaker -> gender (gender));
-diesel::joinable!(speech_clean -> speech (speech));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    speech_clean,
     speech,
     speaker,
     party,
     gender,
+    transcript,
 );
 
 diesel::allow_columns_to_appear_in_same_group_by_clause!(

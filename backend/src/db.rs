@@ -4,11 +4,11 @@ use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
 use common::{BreakdownType, BreakdownResponse, SpeechResponse};
-use crate::schema::speech_clean::dsl::{speech_clean, speaker as sc_sp, text, start, end};
-use crate::schema::speech::dsl::{speech, text as speech_text};
+use crate::schema::speech::dsl::{speech, speaker as speech_speaker, text, clean_text, start, end};
 use crate::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
 use crate::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
 use crate::schema::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
+use crate::schema::transcript::dsl::{transcript, link};
 use crate::schema::{count_words, concat};
 
 pub fn establish_connection() -> MysqlConnection {
@@ -20,7 +20,7 @@ pub fn establish_connection() -> MysqlConnection {
 }
 
 pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
-    let filtered = speech_clean.filter(sc_sp.ne(117));
+    let filtered = speech.filter(speech_speaker.ne(117));
     let loaded = match breakdown_type {
         BreakdownType::Party => filtered
             .inner_join(speaker.inner_join(party))
@@ -71,22 +71,24 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
 }
 
 pub fn get_speeches(connection: &mut MysqlConnection, s_id: i32, word: &str) -> Vec<SpeechResponse> {
-    speech_clean
-        .filter(sc_sp.eq(s_id).and(text.like(format!("%{}%", word))))
-        .inner_join(speech)
+    speech
+        .filter(speech_speaker.eq(s_id).and(clean_text.like(format!("%{}%", word))))
+        .inner_join(transcript)
         .select((
-            speech_text,
+            text,
+            link,
             start,
             end,
          ))
         .limit(100)
-        .load::<(String, PrimitiveDateTime, PrimitiveDateTime)>(connection)
+        .load::<(String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection)
         .expect(format!("error loading speeches for {}, {}", s_id, word).as_str())
         .into_iter()
-        .map(|row| { SpeechResponse { // this could be a modelled select instead of mapping it
+        .map(|row| { SpeechResponse { // this should be modelled select instead of mapping it, database types go into common
             text: row.0,
-            start: row.1,
-            end: row.2,
+            link: row.1,
+            start: row.2,
+            end: row.3,
         } })
         .collect()
 }

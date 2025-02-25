@@ -50,6 +50,7 @@ pub struct BreakdownResponse {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeechResponse {
     pub text: String,
+    pub link: String,
     pub start: PrimitiveDateTime,
     pub end: PrimitiveDateTime,
 }
