@@ -1,5 +1,5 @@
 use common::BreakdownType;
-use crate::breakdown::{Breakdown, Args};
+use crate::breakdown::Breakdown;
 use crate::speech_overlay::SpeechOverlay;
 use yew::prelude::*;
 use gloo::utils::body;
@@ -8,8 +8,8 @@ use log::info;
 #[function_component(Interface)]
 pub fn word_input_component() -> Html {
     let input_value = use_state(|| String::from(""));
-    let checkbox_value = use_state(|| false);
-    let args = use_state(|| Args { word: String::from(""), show_counts: false } ); // one wrapping arg prop seems necessary to not update twice
+    let word = use_state(|| String::from(""));
+    let show_counts = use_state(|| false);
     let overlay_visible = use_state(|| false);
     let id = use_state(|| 0);
     
@@ -23,20 +23,20 @@ pub fn word_input_component() -> Html {
     };
     
     let on_show_counts = {
-        let checkbox_value = checkbox_value.clone();
+        let show_counts = show_counts.clone();
         Callback::from(move |e : MouseEvent| {
             if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                checkbox_value.set(input.checked());
+                show_counts.set(input.checked());
             }
         })
     };
     
     let submit = {
         let input_value = input_value.clone();
-        let args = args.clone();
+        let word = word.clone();
         Callback::from(move |e : SubmitEvent| {
             e.prevent_default();
-            args.set(Args { word: (*input_value).clone(), show_counts: *checkbox_value });
+            word.set((*input_value).clone());
         })
     };
     
@@ -79,11 +79,11 @@ pub fn word_input_component() -> Html {
             </div>
             
             <div style="display: flex; flex-wrap: wrap; justify-content: center">
-                <Breakdown breakdown_type={BreakdownType::Party} args={(*args).clone()} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Gender} args={(*args).clone()} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Speaker} args={(*args).clone()} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
-            <SpeechOverlay id={*id} word={(*args).word.clone()} visible={*overlay_visible} {hide_overlay}/>
+            <SpeechOverlay id={*id} word={(*word).clone()} visible={*overlay_visible} {hide_overlay}/>
         </div>
     }
 }

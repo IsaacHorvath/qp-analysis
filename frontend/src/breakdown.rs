@@ -6,16 +6,11 @@ use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
 //use log::info;
 
-#[derive(PartialEq, Clone)]
-pub struct Args {
-  pub word: String,
-  pub show_counts: bool,
-}
-
 #[derive(Properties, PartialEq)]
 pub struct BreakdownProps {
   pub breakdown_type: BreakdownType,
-  pub args: Args,
+  pub word: String,
+  pub show_counts: bool,
   pub get_speeches: Callback<i32>,
 }
 
@@ -29,7 +24,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
     {
         let data = data.clone();
         let loading = loading.clone();
-        let word = props.args.word.clone();
+        let word = props.word.clone();
         let breakdown_type = props.breakdown_type.clone();
         use_effect(move || {
             if (*word_state) != word {
@@ -75,7 +70,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 <Plot
                     breakdown_type={props.breakdown_type.clone()}
                     data={breakdown_data.clone()}
-                    show_counts={props.args.show_counts}
+                    show_counts={props.show_counts}
                     loading={*loading}
                     window_width={window_size.0} 
                     get_speeches={&props.get_speeches}
