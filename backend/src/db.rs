@@ -79,6 +79,7 @@ pub fn get_speeches(connection: &mut MysqlConnection, s_id: i32, word: &str) -> 
             start,
             end,
          ))
+        .limit(100)
         .load::<(String, PrimitiveDateTime, PrimitiveDateTime)>(connection)
         .expect(format!("error loading speeches for {}, {}", s_id, word).as_str())
         .into_iter()

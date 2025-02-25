@@ -5,7 +5,6 @@ use yew::prelude::*;
 use web_sys::HtmlCanvasElement;
 use common::{BreakdownType, BreakdownResponse};
 use std::cmp::{max, min};
-use log::info;
 
 pub enum PlotMsg {
     Redraw,
@@ -20,6 +19,7 @@ pub struct PlotProps {
     pub show_counts: bool,
     pub loading: bool,
     pub window_width: f64,
+    pub get_speeches: Callback<i32>,
 }
 
 struct CoordMapping {
@@ -52,7 +52,7 @@ impl Component for Plot {
         let on_click = ctx.link().callback(|e: MouseEvent| PlotMsg::Clicked(e));
         
         html! (
-            <div style="margin: 5px; overflow-y: auto">
+            <div style="margin: 5px; overflow: auto">
                 <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content">
                     <canvas onclick={on_click} ref = {self.canvas.clone()}/>
                 </div>
@@ -61,10 +61,10 @@ impl Component for Plot {
     }
   
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let breakdown_type = &ctx.props().breakdown_type;
         match msg {
             PlotMsg::Redraw => {
                 let element : HtmlCanvasElement = self.canvas.cast().unwrap();
-                let breakdown_type = &ctx.props().breakdown_type;
                 
                 let width = ctx.props().window_width - 40.0;
                 // //let rect = element.get_bounding_client_rect();
@@ -155,7 +155,7 @@ impl Component for Plot {
                     self.coord_mappings.push(CoordMapping { left: tl.0, top: tl.1, right: br.0, bottom: br.1, id: r.id });
                 }
 
-                // use the secondary series to allow for fine-tuned x values despite segmentation
+                // use the secondary series to allow for fine-tuned x values instead of segments
                 chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                     let s_height = r.score * (c_max / y_max);
                     let left = i as f32 + if show_counts {0.15} else {0.20};
@@ -177,13 +177,21 @@ impl Component for Plot {
                 false
             },
             PlotMsg::Clicked(e) => {
-                for cm in &self.coord_mappings {
-                    let x = e.offset_x();
-                    let y = e.offset_y();
-                    if x > cm.left && x < cm.right && y > cm.top && y < cm.bottom {
-                        info!("{} {} {}", x, y, cm.id);
+                if *breakdown_type == BreakdownType::Speaker {
+                    let mut id: i32 = 0;
+                    for cm in &self.coord_mappings {
+                        let x = e.offset_x();
+                        let y = e.offset_y();
+                        if x > cm.left && x < cm.right && y > cm.top && y < cm.bottom {
+                            id = cm.id;
+                            break
+                        }
+                    }
+                    if id > 0 {
+                        ctx.props().get_speeches.emit(id);
                     }
                 }
+                
                 false
             },
             _ => true,

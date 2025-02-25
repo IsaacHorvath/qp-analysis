@@ -4,6 +4,7 @@ use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
+//use log::info;
 
 #[derive(PartialEq, Clone)]
 pub struct Args {
@@ -15,12 +16,13 @@ pub struct Args {
 pub struct BreakdownProps {
   pub breakdown_type: BreakdownType,
   pub args: Args,
+  pub get_speeches: Callback<i32>,
 }
 
 #[function_component(Breakdown)]
 pub fn breakdown(props: &BreakdownProps) -> Html {
     let data = use_state(|| None);
-    let word_state = use_state(|| props.args.word.clone()); // todo: rename all word to search or something
+    let word_state = use_state(|| String::from("")); // todo: rename all word to search or something
     let loading = use_state(|| false);
     let window_size = use_window_size();
 
@@ -34,7 +36,6 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 loading.set(true);
                 word_state.set(word.clone());
                 spawn_local(async move {
-                    
                     let breakdown_request = DataRequest { search: word };
                     let uri = format!("/api/breakdown/{}", breakdown_type);
                     let resp = Request::put(&uri)
@@ -44,7 +45,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                     let result = {
                         if !resp.ok() {
                             Err(format!(
-                                "Error fetching data {} ({})",
+                                "error fetching breakdown data {} ({})",
                                 resp.status(),
                                 resp.status_text()
                             ))
@@ -77,6 +78,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                     show_counts={props.args.show_counts}
                     loading={*loading}
                     window_width={window_size.0} 
+                    get_speeches={&props.get_speeches}
                 />
             }
         }
