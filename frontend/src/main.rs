@@ -1,6 +1,8 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use frontend::interface::Interface;
+use components::interface::Interface;
+
+mod components;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {

@@ -1,5 +1,5 @@
 use common::*;
-use crate::plot::Plot;
+use crate::components::plot::Plot;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;

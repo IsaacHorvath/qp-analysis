@@ -9,7 +9,6 @@ use std::cmp::{max, min};
 pub enum PlotMsg {
     Redraw,
     Clicked(MouseEvent),
-    Nothing,
 }
 
 #[derive(Properties, PartialEq)]
@@ -194,7 +193,6 @@ impl Component for Plot {
                 
                 false
             },
-            _ => true,
         }
     }
     

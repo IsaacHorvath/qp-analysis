@@ -1,17 +1,55 @@
 use common::BreakdownType;
-use crate::breakdown::Breakdown;
-use crate::speech_overlay::SpeechOverlay;
 use yew::prelude::*;
 use gloo::utils::body;
+use crate::components::breakdown::Breakdown;
+use crate::components::speech_overlay::SpeechOverlay;
 use log::info;
 
 #[function_component(Interface)]
 pub fn word_input_component() -> Html {
+    //let speakers = use_state(|| None);
+    
     let input_value = use_state(|| String::from(""));
     let word = use_state(|| String::from(""));
     let show_counts = use_state(|| false);
     let overlay_visible = use_state(|| false);
     let id = use_state(|| 0);
+
+    // {
+    //     let data = data.clone();
+    //     let loading = loading.clone();
+    //     let word = props.word.clone();
+    //     let breakdown_type = props.breakdown_type.clone();
+    //     use_effect(move || {
+    //         if (*word_state) != word {
+    //             loading.set(true);
+    //             word_state.set(word.clone());
+    //             spawn_local(async move {
+    //                 let breakdown_request = DataRequest { search: word };
+    //                 let uri = format!("/api/breakdown/{}", breakdown_type);
+    //                 let resp = Request::put(&uri)
+    //                     .header("Content-Type", "application/json")
+    //                     .json(&breakdown_request).expect("couldn't create request body")
+    //                     .send().await.unwrap();
+    //                 let result = {
+    //                     if !resp.ok() {
+    //                         Err(format!(
+    //                             "error fetching breakdown data {} ({})",
+    //                             resp.status(),
+    //                             resp.status_text()
+    //                         ))
+    //                     } else {
+    //                         resp.text().await.map_err(|err| err.to_string())
+    //                     }
+    //                 };
+    //                 data.set(Some(result));
+    //                 loading.set(false);
+    //             });
+    //         }
+    // 
+    //         || {}
+    //     });
+    // }
     
     let on_input = {
         let input_value = input_value.clone();

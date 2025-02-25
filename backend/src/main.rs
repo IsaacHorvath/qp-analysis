@@ -11,8 +11,11 @@ use std::path::PathBuf;
 use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
-use backend::db::*;
+use crate::db::*;
 use common::*;
+
+mod schema;
+mod db;
 
 #[derive(Parser, Debug)]
 #[clap(name = "backend", about = "queens park analysis backend")]

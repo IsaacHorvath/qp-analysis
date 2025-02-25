@@ -2,7 +2,7 @@ use yew::prelude::*;
 use time::PrimitiveDateTime;
 use time::macros::format_description;
 use regex::RegexBuilder;
-use log::info;
+//use log::info;
 
 #[derive(Properties, PartialEq)]
 pub struct SpeechBoxProps {
@@ -36,8 +36,6 @@ pub fn speech_box(props: &SpeechBoxProps) -> Html {
         reg_pattern.push_str(punc_match);
     }
     reg_pattern.push(')');
-    
-    info!("{}", reg_pattern);
     
     let re = RegexBuilder::new(&reg_pattern)
         .case_insensitive(true)
