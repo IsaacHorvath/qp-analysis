@@ -66,9 +66,9 @@ impl Component for Plot {
         
         html! (
             <div style="margin: 5px; overflow: auto">
-                <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content">
-                    <canvas style="position: absolute; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                    <canvas ref = {self.canvas.clone()}/>
+                <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content; display: grid">
+                    <canvas style="grid-column: 1; grid-row: 1; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                    <canvas style="grid-column: 1; grid-row: 1" ref = {self.canvas.clone()}/>
                 </div>
             </div>
         )
@@ -94,10 +94,10 @@ impl Component for Plot {
                 inter_canvas.set_width(self.width);
                 
                 if ctx.props().loading {
-                    canvas.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
+                    canvas.set_attribute("style", "opacity: 0.25; grid-column: 1; grid-row: 1").expect("couldn't set opacity");
                 }
                 else {
-                    canvas.set_attribute("style", "opacity: 1").expect("couldn't set opacity");
+                    canvas.set_attribute("style", "opacity: 1; grid-column: 1; grid-row: 1").expect("couldn't set opacity");
                 }
 
                 let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
