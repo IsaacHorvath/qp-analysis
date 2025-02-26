@@ -4,7 +4,8 @@ use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
 use common::*;
-use crate::schema::speech::dsl::{speech, speaker as speech_speaker, text, clean_text, start, end};
+use crate::schema::speech::dsl::{speech, speaker as speech_speaker, text, start, end};
+use crate::schema::speech_clean::dsl::{speech_clean, text as clean_text};
 use crate::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
 use crate::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
 use crate::schema::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
@@ -91,6 +92,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
 
 pub fn get_speeches(connection: &mut MysqlConnection, s_id: i32, word: &str) -> Vec<SpeechResponse> {
     speech
+        .inner_join(speech_clean)
         .filter(speech_speaker.eq(s_id).and(clean_text.like(format!("%{}%", word))))
         .inner_join(transcript)
         .select((

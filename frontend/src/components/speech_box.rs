@@ -44,7 +44,7 @@ pub fn speech_box(props: &SpeechBoxProps) -> Html {
         .unwrap();
         
     let mut inner_html = String::from("<p style=\"color: #aaaaaa; text-align: justify; text-justify: inter-word\">");
-    inner_html.push_str(&re.replace_all(&props.text, "$1<strong style=\"color: #ffeba9\">$2</strong>$3"));
+    inner_html.push_str(&re.replace_all(&props.text, "$1<strong style=\"color: #f6d32d\">$2</strong>$3"));
     inner_html.push_str("</p>");
     
     html! {
