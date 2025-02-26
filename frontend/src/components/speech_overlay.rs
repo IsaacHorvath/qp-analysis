@@ -1,8 +1,9 @@
-use common::{DataRequest, SpeechResponse};
+use common::{DataRequest, SpeechResponse, Speaker};
 use crate::components::speech_box::SpeechBox;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
+use std::collections::HashMap;
 use log::info;
 
 #[derive(Properties, PartialEq)]
@@ -10,7 +11,8 @@ pub struct SpeechOverlayProps {
     pub id: i32,
     pub word: String,
     pub visible: bool,
-    pub hide_overlay: Callback<MouseEvent>
+    pub speaker: Speaker,
+    pub hide_overlay: Callback<MouseEvent>,
 }
 
 #[function_component(SpeechOverlay)]
@@ -64,7 +66,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
              <div style="position: fixed; left: 20px; right: 20px; bottom: 20px; top: 20px; border: 2px solid #575757; border-radius: 15px; padding: 5px; background-color: rgba(0,0,0,0.75)">
                 //<div style="height: 100%; display: flex; justify-content: center">
                     <div style="overflow: auto; height: 100%; width: 100%; display: flex; flex-direction: column; align-content: center">
-                        <h1 style="text-align: center; color: #dddddd; margin: 0">{"speeches:"}</h1>
+                        <h1 style="text-align: center; color: #dddddd; margin: 0">{format!("{} {}", &props.speaker.first_name, &props.speaker.last_name)}</h1>
                         { match data.as_ref() {
                             None => {
                                 html! {

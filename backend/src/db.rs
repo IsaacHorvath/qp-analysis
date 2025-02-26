@@ -3,7 +3,7 @@ use diesel::dsl::sum;
 use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
-use common::{BreakdownType, BreakdownResponse, SpeechResponse};
+use common::*;
 use crate::schema::speech::dsl::{speech, speaker as speech_speaker, text, clean_text, start, end};
 use crate::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
 use crate::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
@@ -17,6 +17,25 @@ pub fn establish_connection() -> MysqlConnection {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     MysqlConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}
+
+
+pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
+    speaker
+        .select((
+            speaker_id,
+            first_name,
+            last_name,
+        ))
+        .load::<(i32, String, String)>(connection)    
+        .expect(format!("error loading speakers").as_str())
+        .into_iter()
+        .map(|row| { SpeakerResponse {
+            id: row.0,
+            first_name: row.1,
+            last_name: row.2,
+        } })
+        .collect()
 }
 
 pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {

@@ -1,5 +1,5 @@
 use axum::{
-    routing::put,
+    routing::{put, get},
     extract::Path,
     Router,
     Json
@@ -43,6 +43,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
+        .route("/api/speakers", get(speakers))
         .route("/api/breakdown/{type}", put(breakdown))
         .route("/api/speeches/{speaker_id}", put(speeches))
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
@@ -57,6 +58,13 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(&sock_addr).await.unwrap();
     axum::serve(listener, app).await.expect("Unable to start server");
+}
+
+async fn speakers() -> Json<Vec<SpeakerResponse>> {
+    let mut connection = establish_connection(); //todo: stop reopening and closing this?
+        
+    log::info!("getting speaker breakdown");
+    Json(get_speakers(&mut connection))
 }
 
 async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Json<Vec<BreakdownResponse>> {

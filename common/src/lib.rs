@@ -39,6 +39,19 @@ pub struct DataRequest {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct SpeakerResponse {
+    pub id: i32,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct Speaker {
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BreakdownResponse {
     pub id: i32,
     pub name: String,
