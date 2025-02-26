@@ -62,7 +62,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
     }  
             
     html! {
-        <div style="position: fixed; left: 0; right: 0; bottom: 0; top: 0; background-color: rgba(0,0,0,0.85)">
+        <div style="position: fixed; left: 0; right: 0; bottom: 0; top: 0; background-color: rgba(0,0,0,0.85); z-index: 20">
              <div style="position: fixed; left: 20px; right: 20px; bottom: 20px; top: 20px; border: 2px solid #575757; border-radius: 15px; padding: 5px; background-color: rgba(0,0,0,0.75)">
                 //<div style="height: 100%; display: flex; justify-content: center">
                     <div style="overflow: auto; height: 100%; width: 100%; display: flex; flex-direction: column; align-content: center">

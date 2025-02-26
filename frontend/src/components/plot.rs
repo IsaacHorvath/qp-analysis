@@ -36,7 +36,10 @@ struct CoordMapping {
 pub struct Plot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
+    width: u32,
+    height: u32,
     coord_mappings: Vec<CoordMapping>,
+    hover_id: i32,
 }
 
 impl Component for Plot {
@@ -49,7 +52,10 @@ impl Component for Plot {
         Plot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
+            height: 0,
+            width: 0,
             coord_mappings: vec![],
+            hover_id: 0,
         }       
     }
 
@@ -60,7 +66,7 @@ impl Component for Plot {
         html! (
             <div style="margin: 5px; overflow: auto">
                 <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content">
-                    <canvas style="position: absolute; z-index: 20" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                    <canvas style="position: absolute; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
                     <canvas ref = {self.canvas.clone()}/>
                 </div>
             </div>
@@ -74,17 +80,17 @@ impl Component for Plot {
                 let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
                 let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
                 
-                let width = ctx.props().window_width - 40.0;
-                // //let rect = canvas.get_bounding_client_rect();
-                canvas.set_height(500);
-                inter_canvas.set_height(500);
-                let canvas_width = match *breakdown_type {
-                    BreakdownType::Speaker => min(max(900, width as u32), 1800), //todo width dependent on num speakers
-                    BreakdownType::Party => min(max(600, width as u32), 900),
-                    BreakdownType::Gender => min(max(300, width as u32), 700),
+                let window_width = ctx.props().window_width - 40.0;
+                self.width = match *breakdown_type {
+                    BreakdownType::Speaker => min(max(900, window_width as u32), 1800), //todo width dependent on num speakers
+                    BreakdownType::Party => min(max(600, window_width as u32), 900),
+                    BreakdownType::Gender => min(max(300, window_width as u32), 700),
                 };
-                canvas.set_width(canvas_width);
-                inter_canvas.set_width(canvas_width);
+                self.height = 500;
+                canvas.set_height(self.height);
+                inter_canvas.set_height(self.height);
+                canvas.set_width(self.width);
+                inter_canvas.set_width(self.width);
                 
                 if ctx.props().loading {
                     canvas.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
@@ -98,7 +104,7 @@ impl Component for Plot {
                 //drawing_area.fill(&WHITE).unwrap();
                 
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
-                let mut label_size = (width.sqrt() / 2.5) as u32;
+                let mut label_size = (window_width.sqrt() / 2.5) as u32;
                 if *breakdown_type == BreakdownType::Speaker {
                     data = data.into_iter().filter(|r| r.count > 0).collect();
                     label_size = label_size - 4;
@@ -208,33 +214,39 @@ impl Component for Plot {
             },
             PlotMsg::Hover(e) => {
                 if !ctx.props().loading {
-                    if *breakdown_type == BreakdownType::Speaker {
-                        let mut cm = CoordMapping::default();
-                        for coord_mapping in &self.coord_mappings {
-                            let x = e.offset_x();
-                            let y = e.offset_y();
-                            if x > coord_mapping.left &&
-                                x < coord_mapping.right &&
-                                y > coord_mapping.top &&
-                                y < coord_mapping.bottom + 20
-                            {
-                                cm = coord_mapping.clone();
-                                break
-                            }
+                    let mut cm = CoordMapping::default();
+                    for coord_mapping in &self.coord_mappings {
+                        let x = e.offset_x();
+                        let y = e.offset_y();
+                        if x > coord_mapping.left &&
+                            x < coord_mapping.right &&
+                            y > coord_mapping.top &&
+                            y < coord_mapping.bottom + 30
+                        {
+                            cm = coord_mapping.clone();
+                            break
                         }
-                        if cm.id != 0 {
+                    }
+                    if cm.id != self.hover_id {
+                        self.hover_id = cm.id;
+                        let context = self
+                            .inter_canvas.cast::<HtmlCanvasElement>()
+                            .unwrap()
+                            .get_context("2d")
+                            .unwrap()
+                            .unwrap()
+                            .dyn_into::<CanvasRenderingContext2d>()
+                            .unwrap();
+                        
+                        let top = min(cm.top, cm.bottom - 20);
+                        if cm.id != 0  {
                             info!("hovering over {}", cm.id);
-                            let context: CanvasRenderingContext2d = self
-                                .inter_canvas.cast::<HtmlCanvasElement>()
-                                .unwrap()
-                                .get_context("2d")
-                                .unwrap()
-                                .unwrap()
-                                .dyn_into::<CanvasRenderingContext2d>()
-                                .unwrap();
-
+                            context.set_line_width(3.0);
                             context.set_stroke_style_str("#fee17d");
-                            context.stroke_rect(cm.left.into(), cm.top.into(), (cm.right - cm.left).into(), (cm.bottom + 20 - cm.top).into());
+                            context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
+                        }
+                        else {
+                            context.clear_rect(0.0, 0.0, self.width.into(), self.height.into());
                         }
                     }
                 }
