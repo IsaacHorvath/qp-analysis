@@ -45,7 +45,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/speakers", get(speakers))
         .route("/api/breakdown/{type}", put(breakdown))
-        .route("/api/speeches/{speaker_id}", put(speeches))
+        .route("/api/speeches/{breakdown}/{id}", put(speeches))
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
@@ -62,8 +62,6 @@ async fn main() {
 
 async fn speakers() -> Json<Vec<SpeakerResponse>> {
     let mut connection = establish_connection(); //todo: stop reopening and closing this?
-        
-    log::info!("getting speaker breakdown");
     Json(get_speakers(&mut connection))
 }
 
@@ -74,19 +72,17 @@ async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataR
     let search = payload.search
         .to_lowercase()
         .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
-        
-    log::info!("getting {} breakdown for \"{}\"", breakdown_type, search);
 
     Json(get_breakdown_word_count(&mut connection, breakdown_type, &search))
 }
 
-async fn speeches(Path(speaker_id): Path<i32>, Json(payload): Json<DataRequest>) -> Json<Vec<SpeechResponse>> {
+async fn speeches(Path((breakdown_type, id)): Path<(String, i32)>, Json(payload): Json<DataRequest>) -> Json<Vec<SpeechResponse>> {
     let mut connection = establish_connection();
+    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())
+        .expect(format!("couldn't process breakdown type {}", breakdown_type).as_str());
     let search = payload.search
         .to_lowercase()
         .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
-        
-    log::info!("getting speeches for {}, \"{}\"", speaker_id, search);
 
-    Json(get_speeches(&mut connection, speaker_id, &search))
+    Json(get_speeches(&mut connection, breakdown_type, id, &search))
 }

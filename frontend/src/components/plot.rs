@@ -4,6 +4,7 @@ use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use common::{BreakdownType, BreakdownResponse};
+use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
 use log::info;
@@ -21,7 +22,7 @@ pub struct PlotProps {
     pub show_counts: bool,
     pub loading: bool,
     pub window_width: f64,
-    pub get_speeches: Callback<i32>,
+    pub get_speeches: Callback<OverlaySelection>,
 }
 
 #[derive(Default, Clone)]
@@ -74,7 +75,7 @@ impl Component for Plot {
     }
   
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        let breakdown_type = &ctx.props().breakdown_type;
+        let breakdown_type = &ctx.props().breakdown_type.clone();
         match msg {
             PlotMsg::Redraw => {
                 let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
@@ -105,6 +106,8 @@ impl Component for Plot {
                 
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
                 let mut label_size = (window_width.sqrt() / 2.5) as u32;
+                
+                // todo do these transformations in database
                 if *breakdown_type == BreakdownType::Speaker {
                     data = data.into_iter().filter(|r| r.count > 0).collect();
                     label_size = label_size - 4;
@@ -191,26 +194,26 @@ impl Component for Plot {
                     }))
                     .unwrap();
                 }
-                
-                false
             },
             PlotMsg::Clicked(e) => {
-                if *breakdown_type == BreakdownType::Speaker {
-                    let mut id: i32 = 0;
-                    for cm in &self.coord_mappings {
-                        let x = e.offset_x();
-                        let y = e.offset_y();
-                        if x > cm.left && x < cm.right && y > cm.top && y < cm.bottom {
-                            id = cm.id;
-                            break
-                        }
-                    }
-                    if id > 0 {
-                        ctx.props().get_speeches.emit(id);
+                let mut id: i32 = 0;
+                for coord_mapping in &self.coord_mappings {
+                    let x = e.offset_x();
+                    let y = e.offset_y();
+                    if x > coord_mapping.left &&
+                        x < coord_mapping.right &&
+                        y > min(coord_mapping.top, coord_mapping.bottom - 20) &&
+                        y < coord_mapping.bottom + 30{
+                        id = coord_mapping.id;
+                        break
                     }
                 }
                 
-                false
+                if id > 0 {
+                    let breakdown_type = breakdown_type.clone();
+                    let heading = ctx.props().data.iter().filter(|r| r.id == id).next().unwrap().name.clone();
+                    ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id, heading});
+                }
             },
             PlotMsg::Hover(e) => {
                 if !ctx.props().loading {
@@ -220,13 +223,14 @@ impl Component for Plot {
                         let y = e.offset_y();
                         if x > coord_mapping.left &&
                             x < coord_mapping.right &&
-                            y > coord_mapping.top &&
+                            y > min(coord_mapping.top, coord_mapping.bottom - 20) &&
                             y < coord_mapping.bottom + 30
                         {
                             cm = coord_mapping.clone();
                             break
                         }
                     }
+                    
                     if cm.id != self.hover_id {
                         self.hover_id = cm.id;
                         let context = self
@@ -250,10 +254,9 @@ impl Component for Plot {
                         }
                     }
                 }
-                
-                false
             },
-        }
+        };
+        false
     }
     
     fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {

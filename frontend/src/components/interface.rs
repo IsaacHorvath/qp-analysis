@@ -4,8 +4,9 @@ use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::breakdown::Breakdown;
-use crate::components::speech_overlay::SpeechOverlay;
+use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use std::collections::HashMap;
+use std::rc::Rc;
 use log::info;
 
 #[function_component(Interface)]
@@ -17,7 +18,7 @@ pub fn word_input_component() -> Html {
     let word = use_state(|| String::from(""));
     let show_counts = use_state(|| false);
     let overlay_visible = use_state(|| false);
-    let id = use_state(|| 0);
+    let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
 
     {
         let speakers = speakers.clone();
@@ -29,11 +30,11 @@ pub fn word_input_component() -> Html {
                     let uri = format!("/api/speakers");
                     let resp = Request::get(&uri).send().await.unwrap();
                     let speaker_response: Vec<SpeakerResponse> = serde_json::from_str(&resp.text().await.unwrap()).unwrap();
-                    speakers.set(Some(speaker_response
+                    speakers.set(Some(Rc::new(speaker_response
                         .into_iter()
                         .map(|s| {(s.id, Speaker {first_name: s.first_name, last_name: s.last_name})})
                         .collect::<HashMap<i32, Speaker>>()
-                    ));
+                    )));
                     loading.set(false);
                 });
             }
@@ -70,11 +71,11 @@ pub fn word_input_component() -> Html {
     };
     
     let get_speeches = {
-        let id = id.clone();
+        let selection = selection.clone();
         let overlay_visible = overlay_visible.clone();
-        Callback::from(move |new_id| {
-            info!("get speeches made it to parent, id {}", new_id);
-            id.set(new_id);
+        Callback::from(move |s: OverlaySelection| {
+            info!("{} get speeches made it to parent, id {}", s.breakdown_type, s.id);
+            selection.set(s);
             body().set_attribute("style", "overflow: hidden; background-color: #121212").unwrap();
             overlay_visible.set(true);
         })
@@ -82,8 +83,8 @@ pub fn word_input_component() -> Html {
     
     let hide_overlay = {
         let overlay_visible = overlay_visible.clone();
-        info!("hide overlay");
         Callback::from(move |_| {
+            info!("hide overlay");
             body().set_attribute("style", "overflow: auto; background-color: #121212").unwrap();
             overlay_visible.set(false);
         })
@@ -112,9 +113,15 @@ pub fn word_input_component() -> Html {
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
-            if *id != 0 {
-                if let Some(s) = &(*speakers) {
-                    <SpeechOverlay id={*id} word={(*word).clone()} visible={*overlay_visible} speaker={s[&*id].clone()} {hide_overlay}/>
+            if (*selection).id != 0 {
+                if (*loading) == false {
+                    <SpeechOverlay
+                        selection={(*selection).clone()}
+                        word={(*word).clone()}
+                        visible={*overlay_visible}
+                        {hide_overlay}
+                        speakers={Rc::clone((*speakers).as_ref().unwrap())}
+                    />
                 }
             }
         </div>

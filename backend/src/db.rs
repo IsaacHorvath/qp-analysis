@@ -85,31 +85,65 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             name: row.1,
             colour: row.2,
             count: row.3.unwrap() as i32,
-            score: 100000.0/(row.4 as f32)*(row.3.unwrap() as f32), // should this be in sql?
+            score: 100000.0/(row.4 as f32)*(row.3.unwrap() as f32), // todo: this should be in sql
         } })
         .collect()
 }
 
-pub fn get_speeches(connection: &mut MysqlConnection, s_id: i32, word: &str) -> Vec<SpeechResponse> {
-    speech
-        .inner_join(speech_clean)
-        .filter(speech_speaker.eq(s_id).and(clean_text.like(format!("%{}%", word))))
-        .inner_join(transcript)
-        .select((
-            text,
-            link,
-            start,
-            end,
-         ))
-        .limit(100)
-        .load::<(String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection)
-        .expect(format!("error loading speeches for {}, {}", s_id, word).as_str())
+pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownType, id: i32, word: &str) -> Vec<SpeechResponse> {
+    let loaded = match breakdown_type {
+        BreakdownType::Party => speech
+            .inner_join(speech_clean)
+            .inner_join(speaker.inner_join(party))
+            .filter(party_id.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .inner_join(transcript)
+            .select((
+                speech_speaker,
+                text,
+                link,
+                start,
+                end,
+            ))
+            .limit(100)
+            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+        BreakdownType::Gender => speech
+            .inner_join(speech_clean)
+            .inner_join(speaker.inner_join(gender))
+            .filter(gender_id.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .inner_join(transcript)
+            .select((
+                speech_speaker,
+                text,
+                link,
+                start,
+                end,
+            ))
+            .limit(100)
+            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+        BreakdownType::Speaker => speech
+            .inner_join(speech_clean)
+            .filter(speech_speaker.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .inner_join(transcript)
+            .select((
+                speech_speaker,
+                text,
+                link,
+                start,
+                end,
+            ))
+            .limit(100)
+            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+    };
+    
+    loaded
+        .expect(format!("error loading speeches for {} {}, {}", breakdown_type, id, word).as_str())
         .into_iter()
-        .map(|row| { SpeechResponse { // this should be modelled select instead of mapping it, database types go into common
-            text: row.0,
-            link: row.1,
-            start: row.2,
-            end: row.3,
+        .map(|row| { SpeechResponse { // todo: this should be modelled select instead of mapping it, database types go into common
+            speaker: row.0,
+            text: row.1,
+            link: row.2,
+            start: row.3,
+            end: row.4,
         } })
         .collect()
 }

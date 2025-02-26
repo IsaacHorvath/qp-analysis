@@ -1,5 +1,6 @@
 use common::*;
 use crate::components::plot::Plot;
+use crate::components::speech_overlay::{OverlaySelection};
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -11,7 +12,7 @@ pub struct BreakdownProps {
   pub breakdown_type: BreakdownType,
   pub word: String,
   pub show_counts: bool,
-  pub get_speeches: Callback<i32>,
+  pub get_speeches: Callback<OverlaySelection>,
 }
 
 #[function_component(Breakdown)]
