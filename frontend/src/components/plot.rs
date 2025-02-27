@@ -3,6 +3,7 @@ use plotters::prelude::SegmentValue::CenterOf;
 use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
+use gloo::utils::window;
 use common::{BreakdownType, BreakdownResponse};
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
@@ -37,10 +38,26 @@ struct CoordMapping {
 pub struct Plot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
-    width: u32,
-    height: u32,
+    dpr: f64,
     coord_mappings: Vec<CoordMapping>,
     hover_id: i32,
+}
+
+fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
+    canvas.get_context("2d").unwrap().unwrap().dyn_into::<CanvasRenderingContext2d>().unwrap()
+}
+
+impl Plot {
+    fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
+        let x = (e.offset_x() as f64 * self.dpr) as i32;
+        let y = (e.offset_y() as f64 * self.dpr) as i32;
+        for m in &self.coord_mappings {
+            if x > m.left && x < m.right && y > min(m.top, m.bottom - 20) && y < m.bottom + 30 {
+                return m.clone()
+            }
+        }
+        CoordMapping::default()
+    }
 }
 
 impl Component for Plot {
@@ -53,8 +70,7 @@ impl Component for Plot {
         Plot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
-            height: 0,
-            width: 0,
+            dpr: 1.0,
             coord_mappings: vec![],
             hover_id: 0,
         }       
@@ -65,47 +81,54 @@ impl Component for Plot {
         let onmousemove = ctx.link().callback(|e: MouseEvent| PlotMsg::Hover(e));
         
         html! (
-            <div style="margin: 5px; overflow: auto">
-                <div style="border: 2px solid #fee17d; border-radius: 20px; padding: 5px; width: fit-content; display: grid">
-                    <canvas style="grid-column: 1; grid-row: 1; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                    <canvas style="grid-column: 1; grid-row: 1" ref = {self.canvas.clone()}/>
-                </div>
+            <div style="margin: 0.5px; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 0.5%; width: fit-content; display: grid" >
+                <canvas style="grid-column: 1; grid-row: 1; z-index: 10; width: 99.5%; height: 99.5%" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                <canvas style="grid-column: 1; grid-row: 1; width: 99.5%; height: 99.5%" ref = {self.canvas.clone()}/>
             </div>
         )
     }
   
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
+        let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
         let breakdown_type = &ctx.props().breakdown_type.clone();
+        
+        let window_width = ctx.props().window_width - 40.0;
+        let width = match *breakdown_type {
+            BreakdownType::Speaker => min(max(900, window_width as u32), 1800), //todo width dependent on num speakers
+            BreakdownType::Party => min(max(600, window_width as u32), 900),
+            BreakdownType::Gender => min(max(300, window_width as u32), 700),
+        };
+        let height: u32 = 500;
+        
+        self.dpr = window().device_pixel_ratio();
+        let mut canvas_width = width;
+        let mut canvas_height = height;
+        if self.dpr >= 1.0 {
+            canvas_width = (self.dpr * canvas_width as f64) as u32;
+            canvas_height = (self.dpr * canvas_height as f64) as u32;
+        }
+        
         match msg {
             PlotMsg::Redraw => {
-                let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
-                let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
-                
-                let window_width = ctx.props().window_width - 40.0;
-                self.width = match *breakdown_type {
-                    BreakdownType::Speaker => min(max(900, window_width as u32), 1800), //todo width dependent on num speakers
-                    BreakdownType::Party => min(max(600, window_width as u32), 900),
-                    BreakdownType::Gender => min(max(300, window_width as u32), 700),
-                };
-                self.height = 500;
-                canvas.set_height(self.height);
-                inter_canvas.set_height(self.height);
-                canvas.set_width(self.width);
-                inter_canvas.set_width(self.width);
-                
                 if ctx.props().loading {
-                    canvas.set_attribute("style", "opacity: 0.25; grid-column: 1; grid-row: 1").expect("couldn't set opacity");
+                    canvas.set_attribute("style", &format!("opacity: 0.25; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
                 }
                 else {
-                    canvas.set_attribute("style", "opacity: 1; grid-column: 1; grid-row: 1").expect("couldn't set opacity");
+                    canvas.set_attribute("style", &format!("opacity: 1; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
                 }
+                inter_canvas.set_attribute("style", &format!("grid-column: 1; grid-row: 1; z-index: 10; width: {}px; height: {}px", width, height)).expect("couldn't set dimensions");
+                
+                canvas.set_height(canvas_height);
+                inter_canvas.set_height(canvas_height);
+                canvas.set_width(canvas_width);
+                inter_canvas.set_width(canvas_width);
 
                 let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
                 let drawing_area = backend.into_drawing_area();
-                //drawing_area.fill(&WHITE).unwrap();
                 
                 let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
-                let mut label_size = (window_width.sqrt() / 2.5) as u32;
+                let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
                 
                 // todo do these transformations in database
                 if *breakdown_type == BreakdownType::Speaker {
@@ -123,18 +146,18 @@ impl Component for Plot {
                 let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap() as f32; 
 
                 let mut chart= ChartBuilder::on(&drawing_area)
-                    .x_label_area_size(40)
-                    .y_label_area_size(60) //todo use log or text length to find out how much space we need for these
-                    .right_y_label_area_size(if show_counts {60} else {0})
-                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", 40, &WHITE))
+                    .x_label_area_size((40.0 * self.dpr) as u32)
+                    .y_label_area_size((60.0 * self.dpr) as u32)
+                    .right_y_label_area_size(if show_counts {(60.0 * self.dpr) as u32} else {0})
+                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", (40.0 * self.dpr) as u32, &WHITE))
                     .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
                     .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max);
 
                 let bold_line = hex::decode("97948f").unwrap();
                 let light_line = hex::decode("67635c").unwrap();
 
-                label_size = max(label_size, 8);
-                let desc_style = TextStyle::from(("sans-serif", 16).into_font()).color(&WHITE);
+                label_size = max(label_size, (8.0 * self.dpr) as u32);
+                let desc_style = TextStyle::from(("sans-serif", (16.0 * self.dpr) as u32).into_font()).color(&WHITE);
                 chart.configure_mesh()
                     .disable_x_mesh()
                     .x_desc(format!("{}", *breakdown_type)) 
@@ -147,7 +170,7 @@ impl Component for Plot {
                         }
                     })
                     .y_desc("word count per 100,000")
-                    .y_label_style(&WHITE)
+                    .y_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
                     .axis_desc_style(desc_style.clone())
                     .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
                     .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
@@ -196,51 +219,21 @@ impl Component for Plot {
                 }
             },
             PlotMsg::Clicked(e) => {
-                let mut id: i32 = 0;
-                for coord_mapping in &self.coord_mappings {
-                    let x = e.offset_x();
-                    let y = e.offset_y();
-                    if x > coord_mapping.left &&
-                        x < coord_mapping.right &&
-                        y > min(coord_mapping.top, coord_mapping.bottom - 20) &&
-                        y < coord_mapping.bottom + 30{
-                        id = coord_mapping.id;
-                        break
-                    }
-                }
+                let cm = self.mouse_mapping(e);
                 
-                if id > 0 {
+                if cm.id > 0 {
                     let breakdown_type = breakdown_type.clone();
-                    let heading = ctx.props().data.iter().filter(|r| r.id == id).next().unwrap().name.clone();
-                    ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id, heading});
+                    let heading = ctx.props().data.iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                    ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id: cm.id, heading});
                 }
             },
             PlotMsg::Hover(e) => {
                 if !ctx.props().loading {
-                    let mut cm = CoordMapping::default();
-                    for coord_mapping in &self.coord_mappings {
-                        let x = e.offset_x();
-                        let y = e.offset_y();
-                        if x > coord_mapping.left &&
-                            x < coord_mapping.right &&
-                            y > min(coord_mapping.top, coord_mapping.bottom - 20) &&
-                            y < coord_mapping.bottom + 30
-                        {
-                            cm = coord_mapping.clone();
-                            break
-                        }
-                    }
+                    let cm = self.mouse_mapping(e);
                     
                     if cm.id != self.hover_id {
                         self.hover_id = cm.id;
-                        let context = self
-                            .inter_canvas.cast::<HtmlCanvasElement>()
-                            .unwrap()
-                            .get_context("2d")
-                            .unwrap()
-                            .unwrap()
-                            .dyn_into::<CanvasRenderingContext2d>()
-                            .unwrap();
+                        let context = canvas_context(&inter_canvas);
                         
                         let top = min(cm.top, cm.bottom - 20);
                         if cm.id != 0  {
@@ -250,7 +243,7 @@ impl Component for Plot {
                             context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
                         }
                         else {
-                            context.clear_rect(0.0, 0.0, self.width.into(), self.height.into());
+                            context.clear_rect(0.0, 0.0, canvas_width.into(), canvas_height.into());
                         }
                     }
                 }
