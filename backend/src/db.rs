@@ -3,14 +3,14 @@ use diesel::dsl::sum;
 use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
-use common::*;
-use crate::schema::speech::dsl::{speech, speaker as speech_speaker, text, start, end};
-use crate::schema::speech_clean::dsl::{speech_clean, text as clean_text};
-use crate::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
-use crate::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
-use crate::schema::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
-use crate::schema::transcript::dsl::{transcript, link};
-use crate::schema::{count_words, concat};
+use common::models::*;
+use common::schema::speech::dsl::{speech, speaker as speech_speaker, text, start, end};
+use common::schema::speech_clean::dsl::{speech_clean, text as clean_text};
+use common::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
+use common::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
+use common::schema::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
+use common::schema::transcript::dsl::{transcript, link};
+use common::schema::{count_words, concat};
 
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();

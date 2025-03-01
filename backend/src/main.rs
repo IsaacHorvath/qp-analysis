@@ -12,9 +12,8 @@ use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use crate::db::*;
-use common::*;
+use common::models::*;
 
-mod schema;
 mod db;
 
 #[derive(Parser, Debug)]

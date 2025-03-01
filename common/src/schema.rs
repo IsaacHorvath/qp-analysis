@@ -58,7 +58,7 @@ diesel::table! {
 diesel::table! {
     transcript (id) {
         id -> Integer,
-        #[max_length = 100]
+        #[max_length = 500]
         link -> Varchar,
     }
 }
