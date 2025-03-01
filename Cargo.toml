@@ -2,6 +2,7 @@
 resolver = "2"
 
 members = [
+    "scraper",
     "backend",
     "frontend",
     "common"

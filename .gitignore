@@ -1,4 +1,6 @@
 /target
 /dist
+/scraper/downloads
+/scraper/target
 .env
 notes.txt

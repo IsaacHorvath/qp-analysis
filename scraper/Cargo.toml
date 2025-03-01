@@ -1,0 +1,11 @@
+[package]
+name = "qp-scraper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+regex = "1.11.1"
+reqwest = "0.12.12"
+scraper = "0.22.0"
+time = "0.3.37"
+tokio = { version = "1.43.0", features = ["full"] }
