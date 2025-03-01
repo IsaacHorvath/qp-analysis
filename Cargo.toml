@@ -2,8 +2,14 @@
 resolver = "2"
 
 members = [
-    "scraper",
+    # queens park etl
+    "qp-scraper",
+    "qp-translator",
+    
+    # analysis app
     "backend",
     "frontend",
+    
+    # internal
     "common"
 ]

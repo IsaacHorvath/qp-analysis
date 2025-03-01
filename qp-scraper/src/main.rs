@@ -73,13 +73,6 @@ pub fn get_next_volume_url(volume: char, html: &str) -> Option<String> {
         if volume_char == volume {
             return Some(a.value().attr("href").unwrap().to_string());
         }
-        // else {
-        //     if target_volume == volume_char {
-        //         return Some(a.value().attr("href").unwrap().to_string());
-        //     }
-        //     target_volume = ((target_volume as u8) + 1) as char;
-        //     println!("Volume: {}", target_volume);
-        // }
     }
     None
 }

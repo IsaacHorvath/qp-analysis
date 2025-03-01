@@ -63,6 +63,8 @@ diesel::table! {
     }
 }
 
+
+diesel::define_sql_function!(fn last_insert_id() -> Integer);
 diesel::define_sql_function!(fn count_words(x: Text, y: Varchar) -> Integer);
 diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Varchar);
 

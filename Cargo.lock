@@ -2483,6 +2483,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "qp-translator"
+version = "0.1.0"
+dependencies = [
+ "aho-corasick",
+ "common",
+ "diesel",
+ "dotenvy",
+ "regex",
+ "scraper",
+ "time",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
