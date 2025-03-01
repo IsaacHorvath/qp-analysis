@@ -12,7 +12,7 @@ mod db;
 mod models;
 
 pub fn main() {
-    let mut files = fs::read_dir("/home/isaac/.rust/qp-scraper/downloads/").unwrap()
+    let mut files = fs::read_dir("../qp-scraper/downloads/").unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, _>>().unwrap();
         
