@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let response = reqwest::get(&url).await?;
         let html = response.text().await?;
         
-        let file_name = format!("/home/isaac/.rust/qp-scraper/downloads/{}_{}.txt", date, volume);
+        let file_name = format!("./downloads/{}_{}.txt", date, volume);
         let mut buffer = File::create(file_name.clone()).await?;
         buffer.write_all(html.as_bytes()).await?;
         println!("Wrote {}", file_name);

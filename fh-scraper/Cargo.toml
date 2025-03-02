@@ -1,0 +1,9 @@
+[package]
+name = "fh-scraper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = "0.12.12"
+time = "0.3.37"
+tokio = { version = "1.43.0", features = ["full"] }
