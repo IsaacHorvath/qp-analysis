@@ -92,13 +92,21 @@ impl Component for Plot {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
         let breakdown_type = &ctx.props().breakdown_type.clone();
+        let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
+                
+        // todo do these transformations in database
+        data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
+        if data.len() > 10 {
+                data = data[0..10].to_vec();
+        }
         
         let window_width = ctx.props().window_width - 40.0;
+        let segs = data.len() as u32;
         let width = match *breakdown_type {
-            BreakdownType::Speaker => min(max(900, window_width as u32), 1800), //todo width dependent on num speakers
-            BreakdownType::Party => min(max(600, window_width as u32), 900),
-            BreakdownType::Gender => min(max(300, window_width as u32), 700),
-            BreakdownType::Province => min(max(900, window_width as u32), 1800),
+            BreakdownType::Speaker => min(max(segs*90, window_width as u32), segs*180),
+            BreakdownType::Party => min(max(segs*80, window_width as u32), segs*160),
+            BreakdownType::Gender => min(max(segs*80, window_width as u32), segs*160),
+            BreakdownType::Province => min(max(segs*90, window_width as u32), segs*180),
         };
         let height: u32 = 500;
         
@@ -127,18 +135,11 @@ impl Component for Plot {
 
                 let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
                 let drawing_area = backend.into_drawing_area();
-                
-                let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
                 let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
                 
-                // todo do these transformations in database
                 if *breakdown_type == BreakdownType::Speaker {
-                    data = data.into_iter().filter(|r| r.count > 0).collect();
+                    //data = data.into_iter().filter(|r| r.count > 0).collect();
                     label_size = label_size - 4;
-                }
-                data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
-                if data.len() > 10 {
-                     data = data[0..10].to_vec();
                 }
                 
                 let show_counts = ctx.props().show_counts;
@@ -182,7 +183,7 @@ impl Component for Plot {
                     chart
                         .configure_secondary_axes()
                         .y_desc("total word count")
-                        .label_style(&WHITE)
+                        .label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
                         .axis_desc_style(desc_style)
                         .y_label_formatter(&|v| { format!("{}", *v as u32) })
                         .draw()

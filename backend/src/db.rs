@@ -101,6 +101,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
     Some(loaded    
         .expect(format!("error loading {} word count", breakdown_type).as_str())
         .into_iter()
+        .filter(|row| row.3.unwrap() > 0)
         .map(|row| { BreakdownResponse {
             id: row.0,
             name: row.1,

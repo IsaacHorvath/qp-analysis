@@ -1,8 +1,6 @@
 /target
 /dist
-/scraper
+/fh-scraper/downloads
+/qp-scraper/downloads
 .env
-notes.txt
 .git
-dev.sh
-prod.sh
