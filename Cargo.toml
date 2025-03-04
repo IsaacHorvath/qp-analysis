@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     # federal etl
     "fh-scraper",
+    "fh-translator",
 
     # queens park etl
     "qp-scraper",
@@ -14,5 +15,6 @@ members = [
     "frontend",
     
     # internal
-    "common"
+    "common",
+    "db"
 ]

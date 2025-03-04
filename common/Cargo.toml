@@ -4,6 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-diesel = { version = "2.2.7", features = ["mysql", "time"] }
 serde = { version = "1.0.217", features = ["derive"] }
 time = { version = "0.3.37", features = ["serde"] }

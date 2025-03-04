@@ -2,11 +2,11 @@ use diesel::prelude::*;
 use dotenvy::dotenv;
 use std::env;
 use crate::{Speaker, NewSpeech, NewSpeechClean, NewTranscript};
-use common::schema::speaker::dsl::*;
-use common::schema::speech;
-use common::schema::speech_clean;
-use common::schema::transcript;
-use common::schema::last_insert_id;
+use db::speaker::dsl::*;
+use db::speech;
+use db::speech_clean;
+use db::transcript;
+use db::last_insert_id;
 
 use std::io::stdin;
 

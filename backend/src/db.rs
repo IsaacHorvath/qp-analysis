@@ -4,19 +4,20 @@ use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
 use common::models::*;
-use common::schema::speech::dsl::{speech, speaker as speech_speaker, text, start, end};
-use common::schema::speech_clean::dsl::{speech_clean, text as clean_text};
-use common::schema::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
-use common::schema::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
-use common::schema::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
-use common::schema::transcript::dsl::{transcript, link};
-use common::schema::{count_words, concat};
+use db::speech::dsl::{speech, speaker as speech_speaker, text, start, end};
+use db::speech_clean::dsl::{speech_clean, text as clean_text};
+use db::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_words as speaker_total_words};
+use db::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
+use db::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
+use db::province::dsl::{province, id as province_id, name as province_name, colour as province_colour, total_words as province_total_words};
+use db::transcript::dsl::{transcript, link};
+use db::{count_words, concat};
 
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
 
     let database_url = format!("{}{}",
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set")
+        env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         env::var("DATA_SOURCE").expect("DATA_SOURCE must be set")
     );
     MysqlConnection::establish(&database_url)
@@ -31,6 +32,7 @@ pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
             first_name,
             last_name,
         ))
+        
         .load::<(i32, String, String)>(connection)    
         .expect(format!("error loading speakers").as_str())
         .into_iter()
@@ -43,9 +45,8 @@ pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
 }
 
 pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
-    let filtered = speech.filter(speech_speaker.ne(117));
     let loaded = match breakdown_type {
-        BreakdownType::Party => filtered
+        BreakdownType::Party => speech
             .inner_join(speaker.inner_join(party))
             .group_by((party_id, party_name, party_colour, party_total_words))
             .select((
@@ -56,7 +57,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
                 party_total_words,
             ))
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
-        BreakdownType::Gender => filtered
+        BreakdownType::Gender => speech
             .inner_join(speaker.inner_join(gender))
             .group_by((gender_id, gender_name, gender_colour, gender_total_words))
             .select((
@@ -67,7 +68,20 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
                 gender_total_words,
             ))
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
-        BreakdownType::Speaker => filtered
+        BreakdownType::Province => speech
+            .filter(province_total_words.gt(0))
+            .inner_join(speaker.inner_join(province))
+            .group_by((province_id, province_name, province_colour, province_total_words))
+            .select((
+                province_id,
+                province_name,
+                province_colour,
+                sum(count_words(text, word)),
+                province_total_words,
+            ))
+            .load::<(i32, String, String, Option<i64>, i32)>(connection),
+        BreakdownType::Speaker => speech
+            .filter(speaker_total_words.gt(0))
             .inner_join(speaker.inner_join(party))
             .group_by((speaker_id, first_name, last_name, party_colour, speaker_total_words))
             .select((
@@ -113,6 +127,20 @@ pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownT
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(gender))
             .filter(gender_id.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .inner_join(transcript)
+            .select((
+                speech_speaker,
+                text,
+                link,
+                start,
+                end,
+            ))
+            .limit(100)
+            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+        BreakdownType::Province => speech
+            .inner_join(speech_clean)
+            .inner_join(speaker.inner_join(province))
+            .filter(province_id.eq(id).and(clean_text.like(format!("%{}%", word))))
             .inner_join(transcript)
             .select((
                 speech_speaker,

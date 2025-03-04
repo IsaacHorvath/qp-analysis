@@ -7,6 +7,7 @@ use time::PrimitiveDateTime;
 pub enum BreakdownType {
     Party,
     Gender,
+    Province,
     Speaker,
 }
 
@@ -16,6 +17,7 @@ impl FromStr for BreakdownType {
         match input.to_lowercase().as_str() {
             "party" => Ok(BreakdownType::Party),
             "gender" => Ok(BreakdownType::Gender),
+            "province" => Ok(BreakdownType::Province),
             "speaker" => Ok(BreakdownType::Speaker),
             _ => Err(())
         }
@@ -27,6 +29,7 @@ impl fmt::Display for BreakdownType {
         match *self {
             BreakdownType::Party => write!(f, "party"),
             BreakdownType::Gender => write!(f, "gender"),
+            BreakdownType::Province => write!(f, "province"),
             BreakdownType::Speaker => write!(f, "speaker"),
         }
     }
