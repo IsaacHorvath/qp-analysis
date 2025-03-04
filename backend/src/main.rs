@@ -48,9 +48,14 @@ async fn main() {
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
 
+    let mut port = opt.port;
+    if let Ok(port_env) = std::env::var("PORT") {
+        port = port_env.parse::<u16>().unwrap();
+    }
+        
     let sock_addr = SocketAddr::from((
         IpAddr::from_str(opt.addr.as_str()).unwrap_or(IpAddr::V6(Ipv6Addr::LOCALHOST)),
-        opt.port,
+        port,
     ));
 
     log::info!("listening on http://{}", sock_addr);
@@ -64,7 +69,7 @@ async fn speakers() -> Json<Vec<SpeakerResponse>> {
     Json(get_speakers(&mut connection))
 }
 
-async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Json<Vec<BreakdownResponse>> {
+async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Json<Option<Vec<BreakdownResponse>>> {
     let mut connection = establish_connection();
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())
         .expect(format!("couldn't process breakdown type {}", breakdown_type).as_str());

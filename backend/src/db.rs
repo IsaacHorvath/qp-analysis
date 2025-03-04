@@ -44,7 +44,11 @@ pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
         .collect()
 }
 
-pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
+pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Option<Vec<BreakdownResponse>> {
+    if breakdown_type == BreakdownType::Province && env::var("DATA_SOURCE").unwrap() != "federal_house" {
+        return None;
+    }
+    
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speaker.inner_join(party))
@@ -94,7 +98,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
     };
     
-    loaded    
+    Some(loaded    
         .expect(format!("error loading {} word count", breakdown_type).as_str())
         .into_iter()
         .map(|row| { BreakdownResponse {
@@ -104,7 +108,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             count: row.3.unwrap() as i32,
             score: 100000.0/(row.4 as f32)*(row.3.unwrap() as f32), // todo: this should be in sql
         } })
-        .collect()
+        .collect())
 }
 
 pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownType, id: i32, word: &str) -> Vec<SpeechResponse> {

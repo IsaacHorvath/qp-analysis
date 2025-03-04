@@ -65,17 +65,24 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
             }
         }
         Some(Ok(data)) => {
-            let breakdown_data: Vec<BreakdownResponse> = serde_json::from_str(data).unwrap();
-            
-            html! {
-                <Plot
-                    breakdown_type={props.breakdown_type.clone()}
-                    data={breakdown_data.clone()}
-                    show_counts={props.show_counts}
-                    loading={*loading}
-                    window_width={window_size.0} 
-                    get_speeches={&props.get_speeches}
-                />
+            match serde_json::from_str::<Option<Vec<BreakdownResponse>>>(data).unwrap() {
+                None => {
+                    html! {
+                        <div />
+                    }
+                }
+                Some(breakdown_data) => {
+                    html! {
+                        <Plot
+                            breakdown_type={props.breakdown_type.clone()}
+                            data={breakdown_data.clone()}
+                            show_counts={props.show_counts}
+                            loading={*loading}
+                            window_width={window_size.0} 
+                            get_speeches={&props.get_speeches}
+                        />
+                    }
+                }
             }
         }
         Some(Err(err)) => {

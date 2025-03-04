@@ -5,7 +5,6 @@ use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use std::collections::HashMap;
 use std::rc::Rc;
-use log::info;
 
 //todo move to new utils file
 #[derive(PartialEq, Clone)]
