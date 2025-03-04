@@ -8,9 +8,10 @@ use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use std::collections::HashMap;
 use std::rc::Rc;
 use log::info;
+use std::env;
 
 #[function_component(Interface)]
-pub fn word_input_component() -> Html {
+pub fn interface() -> Html {
     let speakers = use_state(|| None);
     
     let loading = use_state(|| false);
@@ -111,7 +112,9 @@ pub fn word_input_component() -> Html {
             <div style="display: flex; flex-wrap: wrap; justify-content: center">
                 <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                if env!("DATA_SOURCE") == "federal_house" {
+                    <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                }
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
             if (*selection).id != 0 {
