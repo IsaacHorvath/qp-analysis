@@ -1,4 +1,4 @@
-use common::{BreakdownType, SpeakerResponse, Speaker};
+use common::models::{BreakdownType, SpeakerResponse, Speaker};
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
@@ -111,6 +111,7 @@ pub fn word_input_component() -> Html {
             <div style="display: flex; flex-wrap: wrap; justify-content: center">
                 <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
             if (*selection).id != 0 {

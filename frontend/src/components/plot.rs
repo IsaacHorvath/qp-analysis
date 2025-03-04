@@ -4,7 +4,7 @@ use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use gloo::utils::window;
-use common::{BreakdownType, BreakdownResponse};
+use common::models::{BreakdownType, BreakdownResponse};
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
@@ -98,6 +98,7 @@ impl Component for Plot {
             BreakdownType::Speaker => min(max(900, window_width as u32), 1800), //todo width dependent on num speakers
             BreakdownType::Party => min(max(600, window_width as u32), 900),
             BreakdownType::Gender => min(max(300, window_width as u32), 700),
+            BreakdownType::Province => min(max(900, window_width as u32), 1800),
         };
         let height: u32 = 500;
         

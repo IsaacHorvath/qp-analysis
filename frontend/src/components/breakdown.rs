@@ -1,4 +1,4 @@
-use common::*;
+use common::models::*;
 use crate::components::plot::Plot;
 use crate::components::speech_overlay::{OverlaySelection};
 use gloo_net::http::Request;

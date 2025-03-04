@@ -1,4 +1,4 @@
-use common::{BreakdownType, DataRequest, SpeechResponse, Speaker};
+use common::models::{BreakdownType, DataRequest, SpeechResponse, Speaker};
 use crate::components::speech_box::SpeechBox;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
