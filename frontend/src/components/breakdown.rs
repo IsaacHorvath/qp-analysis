@@ -1,5 +1,5 @@
 use common::models::*;
-use crate::components::plot::Plot;
+use crate::components::breakdown_plot::BreakdownPlot;
 use crate::components::speech_overlay::{OverlaySelection};
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
@@ -73,7 +73,7 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                 }
                 Some(breakdown_data) => {
                     html! {
-                        <Plot
+                        <BreakdownPlot
                             breakdown_type={props.breakdown_type.clone()}
                             data={breakdown_data.clone()}
                             show_counts={props.show_counts}

@@ -10,14 +10,14 @@ use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
 use log::info;
 
-pub enum PlotMsg {
+pub enum BreakdownPlotMsg {
     Redraw,
     Clicked(MouseEvent),
     Hover(MouseEvent),
 }
 
 #[derive(Properties, PartialEq)]
-pub struct PlotProps {
+pub struct BreakdownPlotProps {
     pub breakdown_type: BreakdownType,
     pub data: Vec<BreakdownResponse>,
     pub show_counts: bool,
@@ -35,7 +35,7 @@ struct CoordMapping {
     id: i32,
 }
 
-pub struct Plot {
+pub struct BreakdownPlot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
     dpr: f64,
@@ -47,7 +47,7 @@ fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
     canvas.get_context("2d").unwrap().unwrap().dyn_into::<CanvasRenderingContext2d>().unwrap()
 }
 
-impl Plot {
+impl BreakdownPlot {
     fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
         let x = (e.offset_x() as f64 * self.dpr) as i32;
         let y = (e.offset_y() as f64 * self.dpr) as i32;
@@ -60,14 +60,14 @@ impl Plot {
     }
 }
 
-impl Component for Plot {
+impl Component for BreakdownPlot {
 
-    type Message = PlotMsg;
-    type Properties = PlotProps;
+    type Message = BreakdownPlotMsg;
+    type Properties = BreakdownPlotProps;
 
     fn create(ctx: &Context<Self>) -> Self {
-        ctx.link().send_message(PlotMsg::Redraw);
-        Plot {
+        ctx.link().send_message(BreakdownPlotMsg::Redraw);
+        BreakdownPlot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
             dpr: 1.0,
@@ -77,8 +77,8 @@ impl Component for Plot {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let onclick = ctx.link().callback(|e: MouseEvent| PlotMsg::Clicked(e));
-        let onmousemove = ctx.link().callback(|e: MouseEvent| PlotMsg::Hover(e));
+        let onclick = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Clicked(e));
+        let onmousemove = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Hover(e));
         
         html! (
             <div style="margin: 0.5%; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 1%; width: fit-content; display: grid" >
@@ -119,7 +119,7 @@ impl Component for Plot {
         }
         
         match msg {
-            PlotMsg::Redraw => {
+            BreakdownPlotMsg::Redraw => {
                 if ctx.props().loading {
                     canvas.set_attribute("style", &format!("opacity: 0.25; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
                 }
@@ -219,7 +219,7 @@ impl Component for Plot {
                     .unwrap();
                 }
             },
-            PlotMsg::Clicked(e) => {
+            BreakdownPlotMsg::Clicked(e) => {
                 let cm = self.mouse_mapping(e);
                 
                 if cm.id > 0 {
@@ -228,7 +228,7 @@ impl Component for Plot {
                     ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id: cm.id, heading});
                 }
             },
-            PlotMsg::Hover(e) => {
+            BreakdownPlotMsg::Hover(e) => {
                 if !ctx.props().loading {
                     let cm = self.mouse_mapping(e);
                     
@@ -254,7 +254,7 @@ impl Component for Plot {
     }
     
     fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
-        ctx.link().send_message(PlotMsg::Redraw);
+        ctx.link().send_message(BreakdownPlotMsg::Redraw);
         true
     }
 }
