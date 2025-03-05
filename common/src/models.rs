@@ -63,6 +63,17 @@ pub struct BreakdownResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct PopulationResponse {
+    pub id: i32,
+    pub name: String,
+    pub population: i32,
+    pub area: f64,
+    pub colour: String,
+    pub count: i32,
+    pub score: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeechResponse {
     pub speaker: i32,
     pub text: String,

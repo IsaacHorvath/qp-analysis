@@ -10,6 +10,7 @@ use db::speaker::dsl::{speaker, id as speaker_id, first_name, last_name, total_w
 use db::party::dsl::{party, id as party_id, name as party_name, colour as party_colour, total_words as party_total_words};
 use db::gender::dsl::{gender, id as gender_id, name as gender_name, colour as gender_colour, total_words as gender_total_words};
 use db::province::dsl::{province, id as province_id, name as province_name, colour as province_colour, total_words as province_total_words};
+use db::riding::dsl::{riding, name as riding_name, population, area};
 use db::transcript::dsl::{transcript, link};
 use db::{count_words, concat};
 
@@ -108,6 +109,42 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             colour: row.2,
             count: row.3.unwrap() as i32,
             score: 100000.0/(row.4 as f32)*(row.3.unwrap() as f32), // todo: this should be in sql
+        } })
+        .collect())
+}
+
+pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -> Option<Vec<PopulationResponse>> {
+    if env::var("DATA_SOURCE").unwrap() != "federal_house" {
+        return None;
+    }
+    
+    let loaded = speech
+        .filter(speaker_total_words.gt(0))
+        .inner_join(speaker.inner_join(party).inner_join(riding))
+        .group_by((speaker_id, riding_name, population, area, party_colour, speaker_total_words))
+        .select((
+            speaker_id,
+            riding_name,
+            population,
+            area,
+            party_colour,
+            sum(count_words(text, word)),
+            speaker_total_words,
+        ))
+        .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection);
+    
+    Some(loaded    
+        .expect("error loading population density word count")
+        .into_iter()
+        //.filter(|row| row.3.unwrap() > 0)
+        .map(|row| { PopulationResponse {
+            id: row.0,
+            name: row.1,
+            population: row.2,
+            area: row.3,
+            colour: row.4,
+            count: row.5.unwrap() as i32,
+            score: 100000.0/(row.6 as f32)*(row.5.unwrap() as f32), // todo: this should be in sql
         } })
         .collect())
 }

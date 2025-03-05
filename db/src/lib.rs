@@ -50,6 +50,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    riding (id) {
+        id -> Integer,
+        #[max_length = 100]
+        name -> Varchar,
+        population -> Integer,
+        electors -> Integer,
+        area -> Double,
+    }
+}
+
+diesel::table! {
     speech (id) {
         id -> Integer,
         speaker -> Integer,
@@ -86,6 +97,7 @@ diesel::joinable!(speech -> transcript (transcript));
 diesel::joinable!(speaker -> party (party));
 diesel::joinable!(speaker -> gender (gender));
 diesel::joinable!(speaker -> province (province));
+diesel::joinable!(speaker -> riding (riding));
 
 diesel::allow_tables_to_appear_in_same_query!(
     speech,
@@ -94,6 +106,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     party,
     gender,
     province,
+    riding,
     transcript,
 );
 
@@ -103,4 +116,7 @@ diesel::allow_columns_to_appear_in_same_group_by_clause!(
     speaker::last_name,
     speaker::total_words,
     party::colour,
+    riding::name,
+    riding::area,
+    riding::population,
 );

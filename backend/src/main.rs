@@ -44,6 +44,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/speakers", get(speakers))
         .route("/api/breakdown/{type}", put(breakdown))
+        .route("/api/population", put(population))
         .route("/api/speeches/{breakdown}/{id}", put(speeches))
         .fallback_service(ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
@@ -78,6 +79,15 @@ async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataR
         .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
 
     Json(get_breakdown_word_count(&mut connection, breakdown_type, &search))
+}
+
+async fn population(Json(payload): Json<DataRequest>) -> Json<Option<Vec<PopulationResponse>>> {
+    let mut connection = establish_connection();
+    let search = payload.search
+        .to_lowercase()
+        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
+
+    Json(get_population_word_count(&mut connection, &search))
 }
 
 async fn speeches(Path((breakdown_type, id)): Path<(String, i32)>, Json(payload): Json<DataRequest>) -> Json<Vec<SpeechResponse>> {

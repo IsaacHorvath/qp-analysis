@@ -4,6 +4,7 @@ use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::breakdown::Breakdown;
+use crate::components::population::Population;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -113,6 +114,7 @@ pub fn interface() -> Html {
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Population word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
             if (*selection).id != 0 {
                 if (*loading) == false {
