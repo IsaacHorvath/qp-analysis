@@ -1,10 +1,9 @@
 use plotters::prelude::*;
-use plotters::prelude::SegmentValue::CenterOf;
 use plotters_canvas::CanvasBackend;
 use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use gloo::utils::window;
-use common::models::{PopulationResponse};
+use common::models::{BreakdownType, PopulationResponse};
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
@@ -27,11 +26,10 @@ pub struct PopulationPlotProps {
 
 #[derive(Default, Clone)]
 struct CoordMapping {
-    top: i32,
-    left: i32,
-    bottom: i32,
-    right: i32,
+    x: i32,
+    y: i32,
     id: i32,
+    name: String,
 }
 
 struct PopDensity {
@@ -57,10 +55,11 @@ fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
 
 impl PopulationPlot {
     fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
+        let ps = (5.0*self.dpr) as i32;
         let x = (e.offset_x() as f64 * self.dpr) as i32;
         let y = (e.offset_y() as f64 * self.dpr) as i32;
         for m in &self.coord_mappings {
-            if x > m.left && x < m.right && y > min(m.top, m.bottom - 20) && y < m.bottom + 30 {
+            if x > m.x - ps && x < m.x + ps && y > m.y - ps && y < m.y + ps {
                 return m.clone()
             }
         }
@@ -112,6 +111,8 @@ impl Component for PopulationPlot {
             canvas_height = (self.dpr * canvas_height as f64) as u32;
         }
         
+        let point_size = (5.0*self.dpr) as u32;
+        
         match msg {
             PopulationPlotMsg::Redraw => {
                 if ctx.props().loading {
@@ -130,13 +131,12 @@ impl Component for PopulationPlot {
                 let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
                 let drawing_area = backend.into_drawing_area();
                 let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
-                let mut data: Vec<PopulationResponse> = ctx.props().data.clone();
                 
-                let data = data.into_iter().map(|r| { PopDensity {
+                let data = ctx.props().data.iter().map(|r| { PopDensity {
                     id: r.id,
-                    name: r.name,
+                    name: r.name.clone(),
                     pop_density: r.population as f64 / r.area,
-                    colour: r.colour,
+                    colour: r.colour.clone(),
                     score: r.score,
                     count: r.count,
                 }}).collect::<Vec<PopDensity>>();
@@ -189,21 +189,14 @@ impl Component for PopulationPlot {
                 }
                 
                 self.coord_mappings = vec![];
-                // for (i, r) in data.iter().enumerate() {
-                //     let left = i as f32 + if show_counts {0.15} else {0.20};
-                //     let right = i as f32 + if show_counts {0.85} else {0.80};
-                //     let mut top = r.score * (c_max / y_max);
-                //     if show_counts { top = f32::max(r.count as f32, top) }
-                //     let tl = chart.borrow_secondary().backend_coord(&(left, top));
-                //     let br = chart.borrow_secondary().backend_coord(&(right, 0.0));
-                //     self.coord_mappings.push(CoordMapping { left: tl.0, top: tl.1, right: br.0, bottom: br.1, id: r.id });
-                // }
-                
-                let size = (5.0*self.dpr) as u32;
+                for r in data.iter() {
+                    let p = chart.backend_coord(&(r.pop_density, r.score));
+                    self.coord_mappings.push(CoordMapping { x: p.0, y: p.1, id: r.id, name: r.name.clone() });
+                }
 
                 chart.draw_series(data.iter().map(|r| {
                     let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                    Circle::new((r.pop_density, r.score), size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
+                    Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
                 }))
                 .unwrap();
                 
@@ -216,34 +209,43 @@ impl Component for PopulationPlot {
                 // }
             },
             PopulationPlotMsg::Clicked(e) => {
-//                 let cm = self.mouse_mapping(e);
-//                 
-//                 if cm.id > 0 {
-//                     let breakdown_type = breakdown_type.clone();
-//                     let heading = ctx.props().data.iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
-//                     ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id: cm.id, heading});
-//                 }
+                let cm = self.mouse_mapping(e);
+                
+                if cm.id > 0 {
+                    let heading = ctx.props().data.iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                    ctx.props().get_speeches.emit(OverlaySelection {breakdown_type: BreakdownType::Speaker, id: cm.id, heading});
+                }
             },
             PopulationPlotMsg::Hover(e) => {
-//                 if !ctx.props().loading {
-//                     let cm = self.mouse_mapping(e);
-//                     
-//                     if cm.id != self.hover_id {
-//                         self.hover_id = cm.id;
-//                         let context = canvas_context(&inter_canvas);
-//                         
-//                         let top = min(cm.top, cm.bottom - 20);
-//                         if cm.id != 0  {
-//                             info!("hovering over {}", cm.id);
-//                             context.set_line_width(3.0);
-//                             context.set_stroke_style_str("#fee17d");
-//                             context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
-//                         }
-//                         else {
-//                             context.clear_rect(0.0, 0.0, canvas_width.into(), canvas_height.into());
-//                         }
-//                     }
-//                 }
+                if !ctx.props().loading {
+                    let cm = self.mouse_mapping(e);
+                    
+                    if cm.id != self.hover_id {
+                        self.hover_id = cm.id;
+                        let context = canvas_context(&inter_canvas);
+                        context.clear_rect(0.0, 0.0, canvas_width.into(), canvas_height.into());
+                        
+                        let left = (cm.x - 10) as f64;
+                        let bottom = (cm.y - 10) as f64;
+                        if cm.id != 0  {
+                            context.begin_path();
+                            context.arc(cm.x as f64, cm.y as f64, point_size as f64, 0.0, 2.0*std::f64::consts::PI).unwrap();
+                            context.set_line_width(3.0);
+                            context.set_stroke_style_str("#fee17d");
+                            context.stroke();
+                            
+                            context.set_line_width(0.5);
+                            info!("{}px sans-serif", (12.0 * self.dpr) as i32);
+                            context.set_font(&format!("{}px sans-serif", (12.0 * self.dpr) as i32));
+                            let ts = context.measure_text(&cm.name).unwrap();
+                            let h = ts.font_bounding_box_ascent() + 2.0;
+                            context.set_fill_style_str("#121212");
+                            context.fill_rect(left - 2.0, bottom - h, ts.width() + 4.0, h + 4.0);
+                            context.set_fill_style_str("#fee17d");
+                            context.fill_text(&cm.name, left, bottom).unwrap();
+                        }
+                    }
+                }
             },
         };
         false
