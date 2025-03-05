@@ -81,9 +81,9 @@ impl Component for Plot {
         let onmousemove = ctx.link().callback(|e: MouseEvent| PlotMsg::Hover(e));
         
         html! (
-            <div style="margin: 0.5px; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 0.5%; width: fit-content; display: grid" >
-                <canvas style="grid-column: 1; grid-row: 1; z-index: 10; width: 99.5%; height: 99.5%" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                <canvas style="grid-column: 1; grid-row: 1; width: 99.5%; height: 99.5%" ref = {self.canvas.clone()}/>
+            <div style="margin: 0.5%; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 1%; width: fit-content; display: grid" >
+                <canvas style="grid-column: 1; grid-row: 1; z-index: 10; width: 99%; height: 99%" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                <canvas style="grid-column: 1; grid-row: 1; width: 99%; height: 99%" ref = {self.canvas.clone()}/>
             </div>
         )
     }
@@ -138,7 +138,6 @@ impl Component for Plot {
                 let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
                 
                 if *breakdown_type == BreakdownType::Speaker {
-                    //data = data.into_iter().filter(|r| r.count > 0).collect();
                     label_size = label_size - 4;
                 }
                 
@@ -158,7 +157,7 @@ impl Component for Plot {
                 let bold_line = hex::decode("97948f").unwrap();
                 let light_line = hex::decode("67635c").unwrap();
 
-                label_size = max(label_size, (8.0 * self.dpr) as u32);
+                label_size = max((label_size as f64 * (1.0 + (self.dpr * 0.1))) as u32, (8.0 * self.dpr) as u32);
                 let desc_style = TextStyle::from(("sans-serif", (16.0 * self.dpr) as u32).into_font()).color(&WHITE);
                 chart.configure_mesh()
                     .disable_x_mesh()
