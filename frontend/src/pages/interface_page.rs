@@ -93,22 +93,6 @@ pub fn interface_page() -> Html {
         })
     };
     
-//     let show_info = {
-//         let info_overlay_visible = info_overlay_visible.clone();
-//         Callback::from(move |_| {
-//             body().set_attribute("style", "overflow: hidden; background-color: #121212").unwrap();
-//             info_overlay_visible.set(true);
-//         })
-//     };
-//     
-//     let hide_info = {
-//         let info_overlay_visible = info_overlay_visible.clone();
-//         Callback::from(move |_| {
-//             body().set_attribute("style", "overflow: auto; background-color: #121212").unwrap();
-//             info_overlay_visible.set(false);
-//         })
-//     };
-    
     html! {
         <div style="background-color: #121212">
             <div >

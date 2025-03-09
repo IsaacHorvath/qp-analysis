@@ -1,8 +1,6 @@
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
-use common::models::{Speaker, BreakdownType, BreakdownResponse, PopulationResponse, SpeechResponse, SpeakerResponse};
-use time::PrimitiveDateTime;
-use time::macros::{date, time};
+use common::models::{Speaker, BreakdownType, SpeakerResponse};
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;

@@ -1,4 +1,4 @@
-use common::models::{BreakdownType, BreakdownResponse, PopulationResponse, SpeechResponse};
+use common::models::{BreakdownResponse, PopulationResponse, SpeechResponse};
 use time::PrimitiveDateTime;
 use time::macros::{date, time};
 

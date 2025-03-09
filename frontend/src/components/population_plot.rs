@@ -143,46 +143,43 @@ impl Component for PopulationPlot {
                 
                 let show_counts = ctx.props().show_counts;
                 let x_max = data.iter().map(|r| { r.pop_density }).max_by(|a, b| {a.total_cmp(b)}).unwrap();
-                let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
-                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap(); 
+                let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap();
+                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap();
 
                 let mut chart= ChartBuilder::on(&drawing_area)
                     .x_label_area_size((50.0 * self.dpr) as u32)
                     .y_label_area_size((60.0 * self.dpr) as u32)
-                    .right_y_label_area_size(if show_counts {(60.0 * self.dpr) as u32} else {0})
                     .caption(&format!("population density scatterplot"), ("sans-serif", (40.0 * self.dpr) as u32, &WHITE))
-                    .build_cartesian_2d((0.0..x_max).log_scale(), 0.0..y_max).unwrap()
-                    .set_secondary_coord((0.0..x_max).log_scale(), 0..c_max);
+                    .build_cartesian_2d((0.02..x_max).log_scale(), 0.0..y_max).unwrap()
+                    .set_secondary_coord((0.02..x_max).log_scale(), 0..c_max);
 
                 let bold_line = hex::decode("97948f").unwrap();
                 let light_line = hex::decode("67635c").unwrap();
 
                 label_size = max((label_size as f64 * (1.0 + (self.dpr * 0.1))) as u32, (8.0 * self.dpr) as u32);
                 let desc_style = TextStyle::from(("sans-serif", (16.0 * self.dpr) as u32).into_font()).color(&WHITE);
-                chart.configure_mesh()
-                    .x_desc("population per square kilometer") 
-                    .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
-                    // .x_label_formatter(&|v| {
-                    //     if let CenterOf(s) = v {
-                    //         return format!("{}", s);
-                    //     } else {
-                    //         return "".to_string();
-                    //     }
-                    // })
-                    .y_desc("word count per 100,000")
-                    .y_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
-                    .axis_desc_style(desc_style.clone())
-                    .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
-                    .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
-                    .draw()
-                    .unwrap();
                 
-                if show_counts {
-                    chart
-                        .configure_secondary_axes()
-                        .y_desc("total word count")
-                        .label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
+                if !show_counts {
+                    chart.configure_mesh()
+                        .x_desc("population per square kilometer") 
+                        .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))   
+                        .y_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
                         .axis_desc_style(desc_style)
+                        .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
+                        .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
+                        .y_desc("word count per 100,000")
+                        .draw()
+                        .unwrap();
+                }
+                else {
+                    chart.configure_mesh()
+                        .x_desc("population per square kilometer") 
+                        .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))   
+                        .y_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
+                        .axis_desc_style(desc_style)
+                        .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
+                        .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
+                        .y_desc("total word count")
                         .y_label_formatter(&|v| { format!("{}", *v as u32) })
                         .draw()
                         .unwrap();
@@ -190,18 +187,27 @@ impl Component for PopulationPlot {
                 
                 self.coord_mappings = vec![];
                 for r in data.iter() {
-                    let p = chart.backend_coord(&(r.pop_density, r.score));
+                    let p = match show_counts {
+                        false => chart.backend_coord(&(r.pop_density, r.score)),
+                        true => chart.borrow_secondary().backend_coord(&(r.pop_density, r.count)),
+                    };
                     self.coord_mappings.push(CoordMapping { x: p.0, y: p.1, id: r.id, name: r.name.clone() });
                 }
 
-                chart.draw_series(data.iter().map(|r| {
-                    let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                    if r.pop_density < 1.0 {
-                        info!("{} {} {}", r.name, r.pop_density, r.score);
-                    }
-                    Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-                }))
-                .unwrap();
+                if !show_counts {
+                    chart.draw_series(data.iter().map(|r| {
+                        let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                        Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
+                    }))
+                    .unwrap();
+                }
+                else {
+                    chart.draw_secondary_series(data.iter().map(|r| {
+                        let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                        Circle::new((r.pop_density, r.count), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
+                    }))
+                    .unwrap();
+                }
                 
                 // if show_counts {
                 //     chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
