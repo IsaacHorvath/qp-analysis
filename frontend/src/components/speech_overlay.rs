@@ -19,7 +19,7 @@ pub struct SpeechOverlayProps {
     pub selection: OverlaySelection,
     pub word: String,
     pub visible: bool,
-    pub hide_overlay: Callback<MouseEvent>,
+    pub hide: Callback<MouseEvent>,
     pub speakers: Rc<HashMap<i32, Speaker>>,
 }
 
@@ -68,7 +68,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
     }
             
     html! {
-        <div style="position: fixed; left: 0; right: 0; bottom: 0; top: 0; background-color: rgba(0,0,0,0.85); z-index: 20">
+        <div style="position: fixed; left: 0; right: 0; bottom: 0; top: 0; background-color: rgba(0,0,0,0.85); z-index: 30">
              <div style="position: fixed; left: 20px; right: 20px; bottom: 20px; top: 20px; border: 2px solid #575757; border-radius: 15px; padding: 5px; background-color: rgba(0,0,0,0.75)">
                 //<div style="height: 100%; display: flex; justify-content: center">
                     <div style="overflow: auto; height: 100%; width: 100%; display: flex; flex-direction: column; align-content: center">
@@ -106,7 +106,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                         } }
                         
                         <div style="position: absolute; top: 2vh; right: 2vh">
-                            <button style="background-color: #121212; border-color: #575757; color: #dddddd; border-radius: 10px; padding-block: 3px; padding-inline: 5px" onclick={&props.hide_overlay}> {"X"} </button>
+                            <button style="background-color: #121212; border-color: #575757; color: #dddddd; border-radius: 10px; padding-block: 3px; padding-inline: 5px" onclick={&props.hide}> {"X"} </button>
                         </div>
                     </div>
                 //</div>

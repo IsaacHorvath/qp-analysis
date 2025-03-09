@@ -66,7 +66,7 @@ async fn main() {
 }
 
 async fn speakers() -> Json<Vec<SpeakerResponse>> {
-    let mut connection = establish_connection(); //todo: stop reopening and closing this?
+    let mut connection = establish_connection();
     Json(get_speakers(&mut connection))
 }
 

@@ -1,22 +1,19 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use components::interface::Interface;
+use components::navbar::*;
+use pages::interface_page::InterfacePage;
+use pages::info_page::InfoPage;
 
+mod pages;
 mod components;
-
-#[derive(Clone, Routable, PartialEq)]
-enum Route {
-    #[at("/")]
-    Home,
-    #[not_found]
-    #[at("/404")]
-    NotFound,
-}
 
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { 
-            <Interface />
+            <InterfacePage />
+        },
+        Route::Info => html! { 
+            <InfoPage />
         },
         Route::NotFound => html! {
             <NotFoundPage />
@@ -44,9 +41,12 @@ fn not_found_page() -> Html {
 #[function_component(App)]
 fn app() -> Html {
     html! {
-        <BrowserRouter>
-            <Switch<Route> render={switch} />
-        </BrowserRouter>
+        <div>
+            <BrowserRouter>
+            <Navbar />
+                <Switch<Route> render={switch} />
+            </BrowserRouter>
+        </div>
     }
 }
 

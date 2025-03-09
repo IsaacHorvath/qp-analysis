@@ -147,7 +147,7 @@ impl Component for PopulationPlot {
                 let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap(); 
 
                 let mut chart= ChartBuilder::on(&drawing_area)
-                    .x_label_area_size((40.0 * self.dpr) as u32)
+                    .x_label_area_size((50.0 * self.dpr) as u32)
                     .y_label_area_size((60.0 * self.dpr) as u32)
                     .right_y_label_area_size(if show_counts {(60.0 * self.dpr) as u32} else {0})
                     .caption(&format!("population density scatterplot"), ("sans-serif", (40.0 * self.dpr) as u32, &WHITE))
@@ -196,6 +196,9 @@ impl Component for PopulationPlot {
 
                 chart.draw_series(data.iter().map(|r| {
                     let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                    if r.pop_density < 1.0 {
+                        info!("{} {} {}", r.name, r.pop_density, r.score);
+                    }
                     Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
                 }))
                 .unwrap();

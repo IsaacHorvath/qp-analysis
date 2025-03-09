@@ -82,8 +82,8 @@ impl Component for BreakdownPlot {
         
         html! (
             <div style="margin: 0.5%; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 1%; width: fit-content; display: grid" >
-                <canvas style="grid-column: 1; grid-row: 1; z-index: 10; width: 99%; height: 99%" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                <canvas style="grid-column: 1; grid-row: 1; width: 99%; height: 99%" ref = {self.canvas.clone()}/>
+                <canvas style="grid-column: 1; grid-row: 1; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                <canvas style="grid-column: 1; grid-row: 1;" ref = {self.canvas.clone()}/>
             </div>
         )
     }
@@ -97,16 +97,16 @@ impl Component for BreakdownPlot {
         // todo do these transformations in database
         data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
         if data.len() > 10 {
-                data = data[0..10].to_vec();
+            data = data[0..10].to_vec();
         }
         
         let window_width = ctx.props().window_width - 40.0;
         let segs = data.len() as u32;
         let width = match *breakdown_type {
-            BreakdownType::Speaker => min(max(segs*90, window_width as u32), segs*180),
+            BreakdownType::Speaker => min(max(segs*90, window_width as u32), segs*160),
             BreakdownType::Party => min(max(segs*80, window_width as u32), segs*160),
             BreakdownType::Gender => min(max(segs*80, window_width as u32), segs*160),
-            BreakdownType::Province => min(max(segs*90, window_width as u32), segs*180),
+            BreakdownType::Province => min(max(segs*90, window_width as u32), segs*160),
         };
         let height: u32 = 500;
         
@@ -137,7 +137,7 @@ impl Component for BreakdownPlot {
                 let drawing_area = backend.into_drawing_area();
                 let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
                 
-                if *breakdown_type == BreakdownType::Speaker {
+                if *breakdown_type == BreakdownType::Speaker || *breakdown_type == BreakdownType::Province {
                     label_size = label_size - 4;
                 }
                 
