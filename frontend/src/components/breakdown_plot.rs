@@ -100,7 +100,7 @@ impl Component for BreakdownPlot {
             data = data[0..10].to_vec();
         }
         
-        let window_width = ctx.props().window_width - 40.0;
+        let window_width = ctx.props().window_width * 0.97;
         let segs = data.len() as u32;
         let width = match *breakdown_type {
             BreakdownType::Speaker => min(max(segs*90, window_width as u32), segs*160),
@@ -144,13 +144,13 @@ impl Component for BreakdownPlot {
                 let show_counts = ctx.props().show_counts;
                 let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
                 let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
-                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap() as f32; 
+                let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap() as f32;
 
                 let mut chart= ChartBuilder::on(&drawing_area)
                     .x_label_area_size((40.0 * self.dpr) as u32)
-                    .y_label_area_size((60.0 * self.dpr) as u32)
+                    .y_label_area_size((70.0 * self.dpr) as u32)
                     .right_y_label_area_size(if show_counts {(60.0 * self.dpr) as u32} else {0})
-                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", (40.0 * self.dpr) as u32, &WHITE))
+                    .caption(&format!("{} breakdown", *breakdown_type), ("sans-serif", (30.0 * self.dpr) as u32, &WHITE))
                     .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
                     .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max);
 

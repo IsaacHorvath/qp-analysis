@@ -99,7 +99,7 @@ impl Component for PopulationPlot {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
         
-        let window_width = ctx.props().window_width - 40.0;
+        let window_width = ctx.props().window_width * 0.97;
         let width = min(max(900, window_width as u32), 1800);
         let height: u32 = 500;
         
@@ -148,8 +148,8 @@ impl Component for PopulationPlot {
 
                 let mut chart= ChartBuilder::on(&drawing_area)
                     .x_label_area_size((50.0 * self.dpr) as u32)
-                    .y_label_area_size((60.0 * self.dpr) as u32)
-                    .caption(&format!("population density scatterplot"), ("sans-serif", (40.0 * self.dpr) as u32, &WHITE))
+                    .y_label_area_size((70.0 * self.dpr) as u32)
+                    .caption(&format!("population density scatterplot"), ("sans-serif", (30.0 * self.dpr) as u32, &WHITE))
                     .build_cartesian_2d((0.02..x_max).log_scale(), 0.0..y_max).unwrap()
                     .set_secondary_coord((0.02..x_max).log_scale(), 0..c_max);
 

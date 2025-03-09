@@ -67,14 +67,14 @@ pub fn info_page() -> Html {
         })
     };
     
-    let style = format!("max-width: {}px; margin-left: 1%; margin-right: 1%; flex-shrink: 0", min(max(480, window_size.0 as u32), 960));
+    let style = format!("width: {}px; margin-left: 1%; margin-right: 1%; flex-shrink: 0", min((window_size.0 * 0.98) as u32, 960));
     let speech_style = format!("max-width: {}px; margin-left: 1%; margin-right: 1%; flex-shrink: 0; display: flex; flex-direction: column", min(max(480, window_size.0 as u32), 960));
-    let div_style = format!("max-width: {}px; margin-left: 1%; margin-right: 1%; display: flex", (window_size.0 * 0.98) as u32);
+    let div_style = format!("width: {}px; display: flex; justify-content: center", (window_size.0 * 0.98) as u32);
     
     let speech_data = speech_data();
             
     html! {
-        <div style="overflow: auto; height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; color: #dddddd;">
+        <div style="overflow: auto; height: 100%; width: fit-content; display: flex; flex-direction: column; align-items: center; color: #dddddd">
             <h2 style={style.clone()}>{"What is this tool?"}</h2>
             
             <p style={style.clone()}>{"This tool is an interface that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament."}</p>
