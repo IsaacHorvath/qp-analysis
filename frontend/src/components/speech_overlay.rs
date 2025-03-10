@@ -68,48 +68,46 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
     }
             
     html! {
-        <div style="position: fixed; left: 0; right: 0; bottom: 0; top: 0; background-color: rgba(0,0,0,0.85); z-index: 30">
-             <div style="position: fixed; left: 20px; right: 20px; bottom: 20px; top: 20px; border: 2px solid #575757; border-radius: 15px; padding: 5px; background-color: rgba(0,0,0,0.75)">
-                //<div style="height: 100%; display: flex; justify-content: center">
-                    <div style="overflow: auto; height: 100%; width: 100%; display: flex; flex-direction: column; align-content: center">
-                        <h1 style="text-align: center; color: #dddddd; margin: 0">{props.selection.heading.clone()}</h1>
-                        { match data.as_ref() {
-                            None => {
-                                html! {
-                                    <div style="text-align: center"> {"loading..."} </div>
-                                }
+        <div class="speech-overlay-mask">
+             <div class="speech-overlay">
+                <div class="speech-overlay-container">
+                    <h1 class="speech-overlay-heading">{props.selection.heading.clone()}</h1>
+                    { match data.as_ref() {
+                        None => {
+                            html! {
+                                <div style="text-align: center"> {"loading..."} </div>
                             }
-                            Some(Ok(data)) => {
-                                let speech_data: Vec<SpeechResponse> = serde_json::from_str(data).unwrap();
+                        }
+                        Some(Ok(data)) => {
+                            let speech_data: Vec<SpeechResponse> = serde_json::from_str(data).unwrap();
+                            
+                            speech_data.into_iter().map(|speech| {
+                                let speaker = &(*(props.speakers))[&speech.speaker];
+                                let name = format!("{} {}", speaker.first_name, speaker.last_name);
                                 
-                                speech_data.into_iter().map(|speech| {
-                                    let speaker = &(*(props.speakers))[&speech.speaker];
-                                    let name = format!("{} {}", speaker.first_name, speaker.last_name);
-                                    
-                                    html!{
-                                        <SpeechBox
-                                            {name}
-                                            start={speech.start}
-                                            end={speech.end}
-                                            link={speech.link}
-                                            text={speech.text}
-                                            word={props.word.clone()}
-                                        />
-                                    }
-                                }).collect::<Html>()
-                            }
-                            Some(Err(err)) => {
-                                html! {
-                                    <div>{"error requesting data from server: "}{err}</div>
+                                html!{
+                                    <SpeechBox
+                                        {name}
+                                        start={speech.start}
+                                        end={speech.end}
+                                        link={speech.link}
+                                        text={speech.text}
+                                        word={props.word.clone()}
+                                    />
                                 }
+                            }).collect::<Html>()
+                        }
+                        Some(Err(err)) => {
+                            html! {
+                                <div>{"error requesting data from server: "}{err}</div>
                             }
-                        } }
-                        
-                        <div style="position: absolute; top: 2vh; right: 2vh">
-                            <button style="background-color: #121212; border-color: #575757; color: #dddddd; border-radius: 10px; padding-block: 3px; padding-inline: 5px" onclick={&props.hide}> {"X"} </button>
-                        </div>
+                        }
+                    } }
+                    
+                    <div class="speech-overlay-exit">
+                        <button onclick={&props.hide}> {"X"} </button>
                     </div>
-                //</div>
+                </div>
              </div>
         </div>
     }

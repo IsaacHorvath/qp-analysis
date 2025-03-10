@@ -81,9 +81,9 @@ impl Component for BreakdownPlot {
         let onmousemove = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Hover(e));
         
         html! (
-            <div style="margin: 0.5%; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 1%; width: fit-content; display: grid" >
-                <canvas style="grid-column: 1; grid-row: 1; z-index: 10" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                <canvas style="grid-column: 1; grid-row: 1;" ref = {self.canvas.clone()}/>
+            <div class="plot" >
+                <canvas class="inter-canvas" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                <canvas class="canvas" ref = {self.canvas.clone()}/>
             </div>
         )
     }
@@ -121,12 +121,13 @@ impl Component for BreakdownPlot {
         match msg {
             BreakdownPlotMsg::Redraw => {
                 if ctx.props().loading {
-                    canvas.set_attribute("style", &format!("opacity: 0.25; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    canvas.set_attribute("style", &format!("opacity: 0.25; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
                 }
                 else {
-                    canvas.set_attribute("style", &format!("opacity: 1; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    canvas.set_attribute("style", &format!("opacity: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    inter_canvas.set_attribute("style", &format!("width: {}px; height: {}px", width, height)).expect("couldn't set interactive dimensions");
                 }
-                inter_canvas.set_attribute("style", &format!("grid-column: 1; grid-row: 1; z-index: 10; width: {}px; height: {}px", width, height)).expect("couldn't set dimensions");
                 
                 canvas.set_height(canvas_height);
                 inter_canvas.set_height(canvas_height);

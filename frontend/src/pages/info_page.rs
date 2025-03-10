@@ -10,7 +10,6 @@ use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::info_page_data::*;
 use std::collections::HashMap;
-use std::cmp::{max, min};
 use std::rc::Rc;
 
 #[function_component(InfoPage)]
@@ -67,10 +66,6 @@ pub fn info_page() -> Html {
         })
     };
     
-    //let style = format!("width: {}px;", min((window_size.0 * 0.98) as u32, 960));
-    let speech_style = format!("max-width: {}px;", min(max(480, window_size.0 as u32), 960));
-    let div_style = format!("width: {}px;", (window_size.0 * 0.98) as u32);
-    
     let speech_data = speech_data();
             
     html! {
@@ -80,7 +75,7 @@ pub fn info_page() -> Html {
             <p>{"This tool is a word search that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament. You can access the tool by clicking the search button at the top of this page."}</p>
             
             <p>{"To use the search interface, type in a word and hit submit to bring up graphs showing information on who used that word. For example, here's what will pop up if you try \"pipeline\":"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
                     data={pipeline_party_data()}
@@ -93,7 +88,7 @@ pub fn info_page() -> Html {
             <p>{"As you can see, the Green party uses this word a lot. They have only two members in the house, but those two said \"pipeline\" more than 200 times. Their bar on the chart above is much taller than other parties because it's measuring the number of pipeline mentions for every 100,000 words they spoke in total."}</p>
 
             <p>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to the 120 members they have. If you're wondering where I got that 650 number, you can check \"show word counts\" at the top of the search interface and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
                     data={pipeline_party_data()}
@@ -109,9 +104,9 @@ pub fn info_page() -> Html {
             
             <p>{"Or are they even talking about oil and gas? Perhaps these MPs are talking about city pipelines, data pipelines, or using the term metaphorically."}</p>
 
-            <p>{"The best way to find out is to click on the bar directly! This will bring up a list of speeches, in chronological order, where a member of that party used the term you searched. Try it on the graph above and you should get a list of speeches that look like this:"}</p>
+            <p>{"The best way to find out is to click on the bar directly! This will bring up a list of speeches, in chronological order, where a member of that party used the term you searched. Try it on the graph above and you should get a list of speeches. The first one looks like this:"}</p>
             
-            <div class="info-speech" style={speech_style.clone()}>
+            <div class="info-speech">
                 <SpeechBox
                     name={"Elizabeth May"}
                     start={speech_data.start}
@@ -133,7 +128,7 @@ pub fn info_page() -> Html {
             <p>{"There are a few other charts included that you can add to the view by clicking them at the top left:"}</p>
             <p>{"--"}</p>
             <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Gender}
                     data={mental_gender_data()}
@@ -146,7 +141,7 @@ pub fn info_page() -> Html {
             <p>{"I have chosen to place that one MP - Blake Desjarlais of the NDP - in his own bucket to respect Two-Spirit as a distinct gender identity, but doing my due diligence would involve contacting him to get his preference. So long as he is in a distinct category, the results you may try to read are going to be statistically skewed in many ways, and cannot be said to represent anything about all Two-Spirit people."}</p>
 
             <p>{"The breakdown by province is fairly self-explanatory. Here's what it looks like when you search \"trump\":"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Province}
                     data={trump_province_data()}
@@ -159,7 +154,7 @@ pub fn info_page() -> Html {
             <p>{"In this case, I might be curious why Manitoba tops the list and Saskatchewan comes closer to the bottom."}</p>
 
             <p>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and looks like this with the example search \"pharmacare\":"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Speaker}
                     data={pharma_speaker_data()}
@@ -174,7 +169,7 @@ pub fn info_page() -> Html {
             <p>{"The population density scatterplot shows you how the word usage correlates with how dense an MPs riding is. Large remote ridings appear on the left, followed by rural and then increasingly urban ridings toward the right. Toronto Center, the most population dense riding, will always appear on the far right of the chart."}</p>
             
             <p>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
-            <div class="info-chart" style={div_style.clone()}>
+            <div class="info-chart">
                 <PopulationPlot
                     data={gaza_pop_data()}
                     show_counts={false}

@@ -49,12 +49,12 @@ pub fn speech_box(props: &SpeechBoxProps) -> Html {
     inner_html.push_str("</p>");
     
     html! {
-        <div style="border: 2px solid #717171; border-radius: 15px; background-color: #121212; margin-top: 1em; margin-left: 5%; margin-right: 5%; padding-block: 10px; padding-inline: 7px; min-width: 200px; flex: 0 1 min-content; max-height: 20em">
-            <div style="max-height: 20em; overflow-y: auto; padding-right: 10px">
-                <div style="display: flex; flex-wrap: wrap; column-gap: 3em">
-                    <p style="color: #fee17d; margin: 0; font-size: 1.15em;">{props.name.clone()}</p>
-                    <a style="color: #fee17d; margin: 0; font-size: 1.15em;" target="_blank" href={props.link.clone()}>{date}</a>
-                    <p style="color: #fee17d; margin: 0; font-size: 1.15em;">{time}</p>
+        <div class="speech-box">
+            <div class="speech-box-container">
+                <div class="speech-box-heading">
+                    <p>{props.name.clone()}</p>
+                    <a target="_blank" href={props.link.clone()}>{date}</a>
+                    <p>{time}</p>
                 </div>
                 {Html::from_html_unchecked(AttrValue::from(inner_html))}
             </div>

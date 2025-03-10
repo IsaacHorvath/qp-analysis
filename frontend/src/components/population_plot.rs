@@ -5,7 +5,7 @@ use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use gloo::utils::window;
 use common::models::{BreakdownType, PopulationResponse};
 use crate::components::speech_overlay::OverlaySelection;
-use std::cmp::{max, min};
+use std::cmp::max;
 use wasm_bindgen::JsCast;
 use log::info;
 
@@ -88,9 +88,9 @@ impl Component for PopulationPlot {
         let onmousemove = ctx.link().callback(|e: MouseEvent| PopulationPlotMsg::Hover(e));
         
         html! (
-            <div style="margin: 0.5%; overflow: auto; image-rendering: pixelated; border: 2px solid #fee17d; border-radius: 20px; padding: 1%; width: fit-content; display: grid" >
-                <canvas style="grid-column: 1; grid-row: 1; z-index: 10; width: 99%; height: 99%" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                <canvas style="grid-column: 1; grid-row: 1; width: 99%; height: 99%" ref = {self.canvas.clone()}/>
+            <div class="plot" >
+                <canvas class="inter-canvas" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
+                <canvas class="canvas" ref = {self.canvas.clone()}/>
             </div>
         )
     }
@@ -99,16 +99,13 @@ impl Component for PopulationPlot {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
         
-        let window_width = ctx.props().window_width * 0.97;
-        let width = min(max(900, window_width as u32), 1800);
-        let height: u32 = 500;
-        
+        let rect = canvas.get_bounding_client_rect();
         self.dpr = window().device_pixel_ratio();
-        let mut canvas_width = width;
-        let mut canvas_height = height;
+        let mut canvas_width = rect.width();
+        let mut canvas_height = rect.height();
         if self.dpr >= 1.0 {
-            canvas_width = (self.dpr * canvas_width as f64) as u32;
-            canvas_height = (self.dpr * canvas_height as f64) as u32;
+            canvas_width = self.dpr * canvas_width;
+            canvas_height = self.dpr * canvas_height;
         }
         
         let point_size = (5.0*self.dpr) as u32;
@@ -116,21 +113,21 @@ impl Component for PopulationPlot {
         match msg {
             PopulationPlotMsg::Redraw => {
                 if ctx.props().loading {
-                    canvas.set_attribute("style", &format!("opacity: 0.25; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    canvas.set_attribute("style", "opacity: 0.25").expect("couldn't set opacity");
+                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
                 }
                 else {
-                    canvas.set_attribute("style", &format!("opacity: 1; grid-column: 1; grid-row: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
+                    canvas.set_attribute("style", "opacity: 1").expect("couldn't set opacity");
+                    inter_canvas.set_attribute("style", "display: initial").expect("couldn't show interactive");
                 }
-                inter_canvas.set_attribute("style", &format!("grid-column: 1; grid-row: 1; z-index: 10; width: {}px; height: {}px", width, height)).expect("couldn't set dimensions");
-                
-                canvas.set_height(canvas_height);
-                inter_canvas.set_height(canvas_height);
-                canvas.set_width(canvas_width);
-                inter_canvas.set_width(canvas_width);
+                canvas.set_height(canvas_height as u32);
+                inter_canvas.set_height(canvas_height as u32);
+                canvas.set_width(canvas_width as u32);
+                inter_canvas.set_width(canvas_width as u32);
 
                 let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
                 let drawing_area = backend.into_drawing_area();
-                let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
+                let mut label_size = (canvas_width.sqrt() / 2.5) as u32;
                 
                 let data = ctx.props().data.iter().map(|r| { PopDensity {
                     id: r.id,
