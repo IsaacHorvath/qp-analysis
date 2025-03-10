@@ -27,7 +27,7 @@ pub fn speech_box(props: &SpeechBoxProps) -> Html {
     reg_pattern.push_str(")(");
     for (i, c) in props.word.chars().enumerate() {
         if c == ' ' {
-            reg_pattern.push_str("\\s");
+            reg_pattern.push_str("(?:$|\\s)");
         }
         else {
             reg_pattern.push(c);

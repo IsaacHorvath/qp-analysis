@@ -79,7 +79,7 @@
 
 .word:focus {
     outline: 1px solid #ffeba9;
-    box-shadow: 0 0 10px #ffeba9;
+    box-shadow: 0 0 5px #ffeba9;
 }
 
 .interface .button {
@@ -108,10 +108,13 @@
     color: #dddddd;
 }
 
-.info > p {
+.info > p, .info > h2 {
     margin-left: 1%;
     margin-right: 1%;
     flex-shrink: 0;
+    width: min(96%, 960px);
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 .info-chart {

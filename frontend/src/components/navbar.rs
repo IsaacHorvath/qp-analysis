@@ -22,21 +22,26 @@ pub fn navbar() -> Html {
     let info = location.path() == "/";
     
     let window = window();
-    let prev_y = use_state(|| 0);
+    let prev_s = use_state(|| 0);
     let navbar_class = use_state(|| "navbar".to_string());
     
     {
         let navbar_class = navbar_class.clone();
-        let prev_y = prev_y.clone();
+        let prev_s = prev_s.clone();
         let scroll = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
-            let rect = e.target().unwrap().dyn_into::<Document>().unwrap().scrolling_element().unwrap();
+            let s = e
+                .target().unwrap()
+                .dyn_into::<Document>().unwrap()
+                .scrolling_element().unwrap()
+                .scroll_top();
             
-            if rect.scroll_top() > *prev_y {
+            if s > *prev_s {
                 navbar_class.set("navbar hide".to_string());
-            }else{
+            }
+            else if s < *prev_s {
                 navbar_class.set("navbar".to_string());
             }
-            prev_y.set(rect.scroll_top());
+            prev_s.set(s);
         });
         
         window.set_onscroll(scroll.as_ref().dyn_ref());

@@ -32,7 +32,7 @@ fn not_found_page() -> Html {
                 <h1 style="color: #ffffff">{ "404 not found" }</h1>
             </div>
             <div style="display: flex; justify-content: center">
-                <button {onclick} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #ffffff; margin: 5px;">{ "Go Home" }</button>
+                <button {onclick} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #ffffff; margin: 5px;">{ "go home" }</button>
             </div>
         </div>
     }
