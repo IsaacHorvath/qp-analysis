@@ -77,9 +77,9 @@ pub fn info_page() -> Html {
         <div class="info">
             <h2 style={style.clone()}>{"What is this tool?"}</h2>
             
-            <p style={style.clone()}>{"This tool is an interface that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament."}</p>
+            <p style={style.clone()}>{"This tool is a word search that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament. You can access the tool by clicking the search button above."}</p>
             
-            <p style={style.clone()}>{"Start by typing in a word or phrase into the input box, and hitting submit. For example, here's what happens when you try \"pipeline\":"}</p>
+            <p style={style.clone()}>{"Type in a word or phrase into the input box and hit submit to bring up our first graph. For example, here's what will pop up if you try \"pipeline\":"}</p>
             <div class="info-chart" style={div_style.clone()}>
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}

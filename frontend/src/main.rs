@@ -10,10 +10,10 @@ mod components;
 fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { 
-            <InterfacePage />
-        },
-        Route::Info => html! { 
             <InfoPage />
+        },
+        Route::Interface => html! { 
+            <InterfacePage />
         },
         Route::NotFound => html! {
             <NotFoundPage />

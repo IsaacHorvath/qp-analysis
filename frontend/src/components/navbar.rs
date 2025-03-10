@@ -9,8 +9,8 @@ use web_sys::Document;
 pub enum Route {
     #[at("/")]
     Home,
-    #[at("/info")]
-    Info,
+    #[at("/search")]
+    Interface,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -19,7 +19,7 @@ pub enum Route {
 #[function_component(Navbar)]
 pub fn navbar() -> Html {
     let location = use_location().unwrap();
-    let interface = location.path() == "/";
+    let info = location.path() == "/";
     
     let window = window();
     let prev_y = use_state(|| 0);
@@ -46,13 +46,13 @@ pub fn navbar() -> Html {
     html! {
         <div class={(*navbar_class).clone()}>
             <div class="navbar-item">
-                <Link<Route> to={Route::Home}>
-                    <button class={if interface {"button highlight"} else {"button"}} >{"interface"}</button>
+                <Link<Route> to={Route::Interface}>
+                    <button class={if info {"button"} else {"button highlight"}} >{"search"}</button>
                 </Link<Route>>
             </div>
             <div class="navbar-item">
-                <Link<Route> to={Route::Info}>
-                    <button class={if interface {"button"} else {"button highlight"}}>{"info"}</button>
+                <Link<Route> to={Route::Home}>
+                    <button class={if info {"button highlight"} else {"button"}}>{"info"}</button>
                 </Link<Route>>
             </div>
             <div class="navbar-item">
