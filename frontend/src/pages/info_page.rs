@@ -104,7 +104,7 @@ pub fn info_page() -> Html {
             
             <p>{"Or are they even talking about oil and gas? Perhaps these MPs are talking about city pipelines, data pipelines, or using the term metaphorically."}</p>
 
-            <p>{"The best way to find out is to click on the bar directly! This will bring up a list of speeches, in chronological order, where a member of that party used the term you searched. Try it on the graph above and you should get a list of speeches. The first one looks like this:"}</p>
+            <p>{"The best way to find out is to click on the bar directly! This will bring up a list of speeches, in chronological order, where a member of that party used the term you searched. Try it on the graph above. The first speech to come up if you click the Green party's bar looks like this:"}</p>
             
             <div class="info-speech">
                 <SpeechBox
@@ -119,14 +119,16 @@ pub fn info_page() -> Html {
             
             <p>{"If you'd like to read the original Hansard House Debates, or watch the accompanying videos, click the date at the top of the speech."}</p>
             
-            <p>{"In this case the results do line up with what we might expect. Many times they do not, and that's why I encourage you to explore the actual text of the speeches. If you're the kind of Ontarian that doesn't pay much attention to Quebec politics, here is a chance to check out what members of the Bloc might be saying about pipelines."}</p>
+            <p>{"In this case the results do line up with our first assumption. Most of the times this raw word \"pipeline\" is used, the members are talking about oil and gas pipelines. The Green Party spends their time criticizing them from a number of angles, whereas the array of Conservative voices who mention them do so ocassionally, and in positive contexts."}</p>
+                
+            <p>{"Sometimes the search results may not be what you expect, and that's why I encourage you to explore the actual text of the speeches. If you're the kind of Ontarian that doesn't pay much attention to Quebec politics, here is a chance to check out what members of the Bloc might be saying about pipelines."}</p>
 
             <p>{"I mention the Bloc because this brings up another limitation: the data presented here is based on transcripts and "}<em>{"translations"}</em>{" provided by the House of Commons. That means that almost every word spoken in French has been translated into English, and you have to be careful not to make assumptions based on the specific kind of language that a French speaker is using when they don't have full control over the translated result."}</p>
 
             <h2>{"More Charts"}</h2>
 
-            <p>{"There are a few other charts included that you can add to the view by clicking them at the top left:"}</p>
-            <p>{"--"}</p>
+            //<p>{"There are a few other charts included that you can add to the view by clicking them at the top left:"}</p>
+            //<p>{"--"}</p>
             <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
             <div class="info-chart">
                 <BreakdownPlot
