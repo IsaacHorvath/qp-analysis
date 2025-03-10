@@ -41,7 +41,22 @@ pub fn trump_province_data() -> Vec<BreakdownResponse> {
         BreakdownResponse {id:8,name:"Nunavut".to_string(),colour:"96ABE9".to_string(),count:2,score:1.7631865},
         BreakdownResponse {id:9,name:"Ontario".to_string(),colour:"EA6D6A".to_string(),count:266,score:3.496633},
         BreakdownResponse {id:11,name:"Quebec".to_string(),colour:"87CEFA".to_string(),count:155,score:2.714894},
-        BreakdownResponse {id:12,name:"Saskatchewan".to_string(),colour:"FFF169".to_string(),count:11,score:1.2284546}
+        BreakdownResponse {id:12,name:"Saskatchewan".to_string(),colour:"FFF169".to_string(),count:11,score:1.2284546},
+    ]
+}
+
+pub fn pharma_speaker_data() -> Vec<BreakdownResponse> {
+    vec![
+        BreakdownResponse {id:242,name:"Yasir Naqvi".to_string(),colour:"EA6D6A".to_string(),count:53,score:95.425},
+        BreakdownResponse {id:164,name:"Peter Julian".to_string(),colour:"F4A460".to_string(),count:258,score:82.8277},
+        BreakdownResponse {id:79,name:"Leila Dance".to_string(),colour:"F4A460".to_string(),count:2,score:67.40816},
+        BreakdownResponse {id:171,name:"Robert Kitchen".to_string(),colour:"6495ED".to_string(),count:22,score:63.096912},
+        BreakdownResponse {id:315,name:"Joanne Thompson".to_string(),colour:"EA6D6A".to_string(),count:10,score:62.75494},
+        BreakdownResponse {id:259,name:"Marcus Powlowski".to_string(),colour:"EA6D6A".to_string(),count:12,score:57.034218},
+        BreakdownResponse {id:82,name:"Don Davies".to_string(),colour:"F4A460".to_string(),count:55,score:46.690887},
+        BreakdownResponse {id:146,name:"Lisa Hepfner".to_string(),colour:"EA6D6A".to_string(),count:15,score:44.9991},
+        BreakdownResponse {id:46,name:"Alexandre Boulerice".to_string(),colour:"F4A460".to_string(),count:71,score:44.773483},
+        BreakdownResponse {id:293,name:"Sonia Sidhu".to_string(),colour:"EA6D6A".to_string(),count:9,score:41.430744},
     ]
 }
 

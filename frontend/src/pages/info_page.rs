@@ -156,8 +156,17 @@ pub fn info_page() -> Html {
             </div>
             <p style={style.clone()}>{"In this case, I might be curious why Manitoba tops the list and Saskatchewan comes closer to the bottom."}</p>
 
-            <p style={style.clone()}>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and might look like this:"}</p>
-            <p style={style.clone()}>{"--"}</p>
+            <p style={style.clone()}>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and looks like this with the example search \"pharmacare\":"}</p>
+            <div class="info-chart" style={div_style.clone()}>
+                <BreakdownPlot
+                    breakdown_type={BreakdownType::Speaker}
+                    data={pharma_speaker_data()}
+                    show_counts={true}
+                    loading={false}
+                    window_width={window_size.0} 
+                    get_speeches={get_speeches("pharmacare".to_owned())}
+                />
+            </div>
             <p style={style.clone()}>{"The bars are coloured according to their party affiliation, and the results are limited to the top ten hits. This can be a very useful way of finding particular MPs who have taken on particular issues either as representatives of their parties, because of constituent demand, or because of private interest in the subject."}</p>
 
             <p style={style.clone()}>{"The population density scatterplot shows you how the word usage correlates with how dense an MPs riding is. Large remote ridings appear on the left, followed by rural and then increasingly urban ridings toward the right. Toronto Center, the most population dense riding, will always appear on the far right of the chart."}</p>

@@ -8,7 +8,7 @@ use common::models::{BreakdownType, BreakdownResponse};
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
-use log::info;
+//use log::info;
 
 pub enum BreakdownPlotMsg {
     Redraw,
@@ -238,7 +238,6 @@ impl Component for BreakdownPlot {
                         
                         let top = min(cm.top, cm.bottom - 20);
                         if cm.id != 0  {
-                            info!("hovering over {}", cm.id);
                             context.set_line_width(3.0);
                             context.set_stroke_style_str("#fee17d");
                             context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
