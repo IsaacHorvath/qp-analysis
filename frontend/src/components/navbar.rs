@@ -1,5 +1,9 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
+use gloo::utils::window;
+use wasm_bindgen::JsCast;
+use wasm_bindgen::closure::Closure;
+use web_sys::Document;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -17,31 +21,43 @@ pub fn navbar() -> Html {
     let location = use_location().unwrap();
     let interface = location.path() == "/";
     
-    let interface_style = format!(
-        "background-color: #575757; border-color: #575757; color: #{}; border-radius: 10px; padding-block: 3px; padding-inline: 5px",
-        if interface {"fee17d"} else {"dddddd"}
-    );
+    let window = window();
+    let prev_y = use_state(|| 0);
+    let navbar_class = use_state(|| "navbar".to_string());
     
-    let info_style = format!(
-        "background-color: #575757; border-color: #575757; color: #{}; border-radius: 10px; padding-block: 3px; padding-inline: 5px",
-        if interface {"dddddd"} else {"fee17d"}
-    );
+    {
+        let navbar_class = navbar_class.clone();
+        let prev_y = prev_y.clone();
+        let scroll = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
+            let rect = e.target().unwrap().dyn_into::<Document>().unwrap().scrolling_element().unwrap();
+            
+            if rect.scroll_top() > *prev_y {
+                navbar_class.set("navbar hide".to_string());
+            }else{
+                navbar_class.set("navbar".to_string());
+            }
+            prev_y.set(rect.scroll_top());
+        });
+        
+        window.set_onscroll(scroll.as_ref().dyn_ref());
+        scroll.forget();
+    }
     
     html! {
-        <div style="background-color: #323232; display: flex; justify-content: center">
-            <div style="margin-left: 2%; margin-top: 5px; margin-right: 2%; margin-bottom: 5px">
+        <div class={(*navbar_class).clone()}>
+            <div class="navbar-item">
                 <Link<Route> to={Route::Home}>
-                    <button style={interface_style}>{"interface"}</button>
+                    <button class={if interface {"button highlight"} else {"button"}} >{"interface"}</button>
                 </Link<Route>>
             </div>
-            <div style="margin-left: 2%; margin-top: 5px; margin-right: 2%; margin-bottom: 5px">
+            <div class="navbar-item">
                 <Link<Route> to={Route::Info}>
-                    <button style={info_style}>{"info"}</button>
+                    <button class={if interface {"button"} else {"button highlight"}}>{"info"}</button>
                 </Link<Route>>
             </div>
-            <div style="margin-left: 2%; margin-top: 5px; margin-right: 2%; margin-bottom: 5px">
+            <div class="navbar-item">
                 <a href="https://github.com/IsaacHorvath/qp-analysis" target="_blank">
-                    <button style="background-color: #575757; border-color: #575757; color: #dddddd; border-radius: 10px; padding-block: 3px; padding-inline: 5px" >{"github"}</button>
+                    <button class="button" >{"github"}</button>
                 </a>
             </div>
         </div>

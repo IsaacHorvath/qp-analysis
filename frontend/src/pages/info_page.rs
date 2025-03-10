@@ -53,7 +53,7 @@ pub fn info_page() -> Html {
         let selection = selection.clone();
         Callback::from(move |s: OverlaySelection| {
             selection.set(s);
-            body().set_attribute("style", "overflow: hidden; background-color: #121212").unwrap();
+            body().set_class_name("body-covered");
             speech_overlay_word.set(w.clone());
             speech_overlay_visible.set(true);
         })
@@ -62,25 +62,25 @@ pub fn info_page() -> Html {
     let hide_speech_overlay = {
         let speech_overlay_visible = speech_overlay_visible.clone();
         Callback::from(move |_| {
-            body().set_attribute("style", "overflow: auto; background-color: #121212").unwrap();
+            body().set_class_name("body");
             speech_overlay_visible.set(false);
         })
     };
     
-    let style = format!("width: {}px; margin-left: 1%; margin-right: 1%; flex-shrink: 0", min((window_size.0 * 0.98) as u32, 960));
-    let speech_style = format!("max-width: {}px; margin-left: 1%; margin-right: 1%; flex-shrink: 0; display: flex; flex-direction: column", min(max(480, window_size.0 as u32), 960));
-    let div_style = format!("width: {}px; display: flex; justify-content: center", (window_size.0 * 0.98) as u32);
+    let style = format!("width: {}px;", min((window_size.0 * 0.98) as u32, 960));
+    let speech_style = format!("max-width: {}px;", min(max(480, window_size.0 as u32), 960));
+    let div_style = format!("width: {}px;", (window_size.0 * 0.98) as u32);
     
     let speech_data = speech_data();
             
     html! {
-        <div style="overflow: auto; height: 100%; width: fit-content; display: flex; flex-direction: column; align-items: center; color: #dddddd">
+        <div class="info">
             <h2 style={style.clone()}>{"What is this tool?"}</h2>
             
             <p style={style.clone()}>{"This tool is an interface that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament."}</p>
             
             <p style={style.clone()}>{"Start by typing in a word or phrase into the input box, and hitting submit. For example, here's what happens when you try \"pipeline\":"}</p>
-            <div style={div_style.clone()}>
+            <div class="info-chart" style={div_style.clone()}>
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
                     data={pipeline_party_data()}
@@ -93,7 +93,7 @@ pub fn info_page() -> Html {
             <p style={style.clone()}>{"As you can see, the Green party uses this word a lot. They have only two members in the house, but those two said \"pipeline\" more than 200 times. Their bar on the chart above is much taller than other parties because it's measuring the number of times they used the word for every 100,000 words they spoke in total."}</p>
 
             <p style={style.clone()}>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to the 120 members they have. If you're wondering where I got that 650 number, you can check \"show word counts\" at the top of the interface and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
-            <div style={div_style.clone()}>
+            <div class="info-chart" style={div_style.clone()}>
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
                     data={pipeline_party_data()}
@@ -111,7 +111,7 @@ pub fn info_page() -> Html {
             
             <p style={style.clone()}>{"If you'd like to read the original Hansard House Debates, or watch the accompanying videos, click the date at the top of the speech:"}</p>
             
-            <div style={speech_style.clone()}>
+            <div class="info-speech" style={speech_style.clone()}>
                 <SpeechBox
                     name={"Elizabeth May"}
                     start={speech_data.start}
@@ -131,7 +131,7 @@ pub fn info_page() -> Html {
             <p style={style.clone()}>{"There are a few other charts included that you can add to the view by clicking them at the top left:"}</p>
             <p style={style.clone()}>{"--"}</p>
             <p style={style.clone()}>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
-            <div style={div_style.clone()}>
+            <div class="info-chart" style={div_style.clone()}>
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Gender}
                     data={mental_gender_data()}
@@ -144,7 +144,7 @@ pub fn info_page() -> Html {
             <p style={style.clone()}>{"I have chosen to place that one MP - Blake Desjarlais of the NDP - in his own bucket to respect Two-Spirit as a distinct gender identity, but doing my due diligence would involve contacting him to get his preference. So long as he is in a distinct category, the results you may try to read are going to be statistically skewed in many ways, and cannot be said to represent anything about all Two-Spirit people."}</p>
 
             <p style={style.clone()}>{"The breakdown by province is fairly self-explanatory. Here's what it looks like when you search \"trump\":"}</p>
-            <div style={div_style.clone()}>
+            <div class="info-chart" style={div_style.clone()}>
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Province}
                     data={trump_province_data()}
@@ -163,7 +163,7 @@ pub fn info_page() -> Html {
             <p style={style.clone()}>{"The population density scatterplot shows you how the word usage correlates with how dense an MPs riding is. Large remote ridings appear on the left, followed by rural and then increasingly urban ridings toward the right. Toronto Center, the most population dense riding, will always appear on the far right of the chart."}</p>
             
             <p style={style.clone()}>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
-            <div style={div_style.clone()}>
+            <div class="info-chart" style={div_style.clone()}>
                 <PopulationPlot
                     data={gaza_pop_data()}
                     show_counts={false}

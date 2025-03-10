@@ -79,7 +79,7 @@ pub fn interface_page() -> Html {
         let speech_overlay_visible = speech_overlay_visible.clone();
         Callback::from(move |s: OverlaySelection| {
             selection.set(s);
-            body().set_attribute("style", "overflow: hidden; background-color: #121212; margin: 0px;").unwrap();
+            body().set_class_name("body-covered");
             speech_overlay_word.set((*word).clone());
             speech_overlay_visible.set(true);
         })
@@ -88,37 +88,37 @@ pub fn interface_page() -> Html {
     let hide_speech_overlay = {
         let speech_overlay_visible = speech_overlay_visible.clone();
         Callback::from(move |_| {
-            body().set_attribute("style", "overflow: auto; background-color: #121212; margin: 0px;").unwrap();
+            body().set_class_name("body");
             speech_overlay_visible.set(false);
         })
     };
     
     html! {
-        <div style="background-color: #121212">
-            <div >
-                // <button style="background-color: #575757; border-color: #575757; color: #dddddd; border-radius: 10px; margin: 5px; padding-block: 3px; padding-inline: 5px" onclick={show_info}>{"info"}</button>
-                <form style="display: flex; flex-wrap: wrap; justify-content: center; color: #ffeba9" onsubmit={submit}>
-                    <div style="align-self: center; margin-inline: 10px">
+        <div class="interface">
+            <div class="form-section">
+                <form onsubmit={submit}>
+                    <div>
                         <label for="word_input"> {"search term:"}</label>
-                        <input type="text" id="word_input" value={(*input_value).clone()} onchange={on_input} style="background-color: #3f3f3f; border-color: #3f3f3f; border-radius: 10px; color: #dddddd; margin: 5px" />
+                        <input type="text" id="word_input" value={(*input_value).clone()} onchange={on_input} class="word"/>
                     </div>
-                    <div style="align-self: center; margin-inline: 10px">
+                    <div>
                         <label for="show_counts"> {"show total counts:"}</label>
                         <input type="checkbox" id="show_counts" onclick={on_show_counts}/>
                     </div>
-                    <div style="align-self: center; margin-inline: 10px">
-                        <input type="submit" value="Submit" style="background-color: #575757; border-color: #575757; color: #dddddd; border-radius: 10px; margin: 5px; padding-block: 3px; padding-inline: 5px" />
+                    <div>
+                        <input type="submit" value="submit" class="button"/>
                     </div>
                 </form>
             </div>
             
-            <div style="display: flex; flex-wrap: wrap; justify-content: center">
+            <div class="charts">
                 <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Population word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
             </div>
+            
             if (*selection).id != 0 {
                 if (*loading) == false {
                     <SpeechOverlay
