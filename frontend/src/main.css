@@ -70,7 +70,7 @@
 .info {
     overflow: auto;
     height: 100%;
-    width: fit-content;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;

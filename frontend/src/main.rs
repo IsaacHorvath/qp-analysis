@@ -3,19 +3,24 @@ use yew_router::prelude::*;
 use components::navbar::*;
 use pages::interface_page::InterfacePage;
 use pages::info_page::InfoPage;
+use pages::prov_info_page::ProvInfoPage;
 
 mod pages;
 mod components;
 
 fn switch(routes: Route) -> Html {
-    match routes {
-        Route::Home => html! { 
+    let provincial = web_sys::window().unwrap().document().unwrap().url().unwrap().contains("queen");
+    match (routes, provincial) {
+        (Route::Home, false) => html! { 
             <InfoPage />
         },
-        Route::Interface => html! { 
+        (Route::Home, true) => html! { 
+            <ProvInfoPage />
+        },
+        (Route::Interface, _) => html! { 
             <InterfacePage />
         },
-        Route::NotFound => html! {
+        (Route::NotFound, _) => html! {
             <NotFoundPage />
         }
     }
@@ -24,7 +29,6 @@ fn switch(routes: Route) -> Html {
 #[function_component(NotFoundPage)]
 fn not_found_page() -> Html {
     let navigator = use_navigator().unwrap();
-
     let onclick = Callback::from(move |_| navigator.push(&Route::Home));
     html! {
         <div>
@@ -43,7 +47,7 @@ fn app() -> Html {
     html! {
         <div>
             <BrowserRouter>
-            <Navbar />
+                <Navbar />
                 <Switch<Route> render={switch} />
             </BrowserRouter>
         </div>
