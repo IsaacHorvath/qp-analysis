@@ -1,3 +1,5 @@
+// todo combine with breakdown
+
 use common::models::*;
 use crate::components::population_plot::PopulationPlot;
 use crate::components::speech_overlay::{OverlaySelection};
@@ -9,9 +11,10 @@ use yew_hooks::prelude::use_window_size;
 
 #[derive(Properties, PartialEq)]
 pub struct PopulationProps {
-  pub word: String,
-  pub show_counts: bool,
-  pub get_speeches: Callback<OverlaySelection>,
+    pub visible: bool,
+    pub word: String,
+    pub show_counts: bool,
+    pub get_speeches: Callback<OverlaySelection>,
 }
 
 #[function_component(Population)]
@@ -65,12 +68,17 @@ pub fn population(props: &PopulationProps) -> Html {
     }
     
     html! {
-        <PopulationPlot
-            data={population_data}
-            show_counts={props.show_counts}
-            loading={*loading}
-            window_width={window_size.0} 
-            get_speeches={&props.get_speeches}
-        />
+        if props.visible {
+            <PopulationPlot
+                data={population_data}
+                show_counts={props.show_counts}
+                loading={*loading}
+                window_width={window_size.0} 
+                get_speeches={&props.get_speeches}
+            />
+        }
+        else {
+            <div />
+        }
     }
 }

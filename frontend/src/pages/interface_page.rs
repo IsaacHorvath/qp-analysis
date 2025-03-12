@@ -16,8 +16,13 @@ pub struct InterfacePageProps {
 #[function_component(InterfacePage)]
 pub fn interface_page(props: &InterfacePageProps) -> Html {
     let speakers = use_state(|| None);
-    
     let loading = use_state(|| false);
+    
+    let show_party = use_state(|| true);
+    let show_gender = use_state(|| false);
+    let show_province = use_state(|| false);
+    let show_speaker = use_state(|| false);
+    let show_pop = use_state(|| false);
     let input_value = use_state(|| String::from(""));
     let word = use_state(|| String::from(""));
     let show_counts = use_state(|| false);
@@ -47,6 +52,52 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             || {}
         });
     }
+    
+    // todo refactor into one function
+    let on_party = {
+        let show_party = show_party.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
+                show_party.set(input.checked());
+            }
+        })
+    };
+    
+    let on_gender = {
+        let show_gender = show_gender.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
+                show_gender.set(input.checked());
+            }
+        })
+    };
+    
+    let on_province = {
+        let show_province = show_province.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
+                show_province.set(input.checked());
+            }
+        })
+    };
+    
+    let on_speaker = {
+        let show_speaker = show_speaker.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
+                show_speaker.set(input.checked());
+            }
+        })
+    };
+    
+    let on_pop = {
+        let show_pop = show_pop.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
+                show_pop.set(input.checked());
+            }
+        })
+    };
     
     let on_input = {
         let input_value = input_value.clone();
@@ -98,31 +149,58 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     
     html! {
         <div class="interface">
-            <div class="form-section">
+            <div class="form-wrapper">
                 <form onsubmit={submit}>
-                    <div>
+                    <div class="vis">
+                            // todo make small component
+                        <div>
+                            <label for="show_party"> {"party"}</label>
+                            <input type="checkbox" id="show_party" onclick={on_party} checked={*show_party}/>
+                        </div>
+                        <div>
+                            <label for="show_gender"> {"gender"}</label>
+                            <input type="checkbox" id="show_gender" onclick={on_gender} />
+                        </div>
+                        if !props.provincial {
+                            <div>
+                                <label for="show_province"> {"province"}</label>
+                                <input type="checkbox" id="show_province" onclick={on_province} />
+                            </div>
+                        }
+                        <div class={if props.provincial {"centered-box"} else {""}} >
+                            <label for="show_speaker"> {"speaker"}</label>
+                            <input type="checkbox" id="show_speaker" onclick={on_speaker} />
+                        </div>
+                        if !props.provincial {
+                            <div class="centered-box">
+                                <label for="show_pop"> {"pop density"}</label>
+                                <input type="checkbox" id="show_pop" onclick={on_pop} />
+                            </div>
+                        }
+                    </div>
+                    <div class="form-section">
                         <label for="word_input"> {"search term:"}</label>
                         <input type="text" id="word_input" value={(*input_value).clone()} onchange={on_input} class="word"/>
                     </div>
-                    <div>
-                        <label for="show_counts"> {"show total counts:"}</label>
+                    <div class="form-section">
+                        <label for="show_counts"> {"show total counts"}</label>
                         <input type="checkbox" id="show_counts" onclick={on_show_counts}/>
                     </div>
-                    <div>
+                    <div class="form-section">
                         <input type="submit" value="submit" class="button"/>
                     </div>
                 </form>
             </div>
             
             <div class="charts">
-                <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Party} visible={*show_party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Gender} visible={*show_gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 if !props.provincial {
-                    <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                    <Breakdown breakdown_type={BreakdownType::Province} visible={*show_province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 }
-                <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Breakdown breakdown_type={BreakdownType::Speaker} visible={*show_speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 if !props.provincial {
-                    <Population word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                    <Population word={(*word).clone()} visible={*show_pop} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 }
             </div>
             

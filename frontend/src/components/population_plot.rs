@@ -160,19 +160,19 @@ impl Component for PopulationPlot {
                         let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap();
                         let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap();
 
-                        let mut chart= ChartBuilder::on(&drawing_area)
-                            .x_label_area_size((50.0 * self.dpr) as u32)
-                            .y_label_area_size((70.0 * self.dpr) as u32)
-                            .build_cartesian_2d((0.02..x_max).log_scale(), 0.0..y_max).unwrap()
-                            .set_secondary_coord((0.02..x_max).log_scale(), 0..c_max);
-
                         let bold_line = hex::decode("97948f").unwrap();
                         let light_line = hex::decode("67635c").unwrap();
 
                         label_size = max((label_size as f64 * (1.0 + (self.dpr * 0.1))) as u32, (8.0 * self.dpr) as u32);
                         let desc_style = TextStyle::from(("sans-serif", (16.0 * self.dpr) as u32).into_font()).color(&WHITE);
+                        self.coord_mappings = vec![];
                         
                         if !show_counts {
+                            let mut chart = ChartBuilder::on(&drawing_area)
+                                .x_label_area_size((50.0 * self.dpr) as u32)
+                                .y_label_area_size((70.0 * self.dpr) as u32)
+                                .build_cartesian_2d((0.02..x_max).log_scale(), 0.0..y_max).unwrap();
+                            
                             chart.configure_mesh()
                                 .x_desc("population per square kilometer") 
                                 .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))   
@@ -183,8 +183,24 @@ impl Component for PopulationPlot {
                                 .y_desc("word count per 100,000")
                                 .draw()
                                 .unwrap();
+                                
+                            chart.draw_series(data.iter().map(|r| {
+                                let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
+                                Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
+                            }))
+                            .unwrap();
+                            
+                            for r in data.iter() {
+                                let p = chart.backend_coord(&(r.pop_density, r.score));
+                                self.coord_mappings.push(CoordMapping { x: p.0, y: p.1, id: r.id, name: r.name.clone() });
+                            };
                         }
                         else {
+                            let mut chart= ChartBuilder::on(&drawing_area)
+                                .x_label_area_size((50.0 * self.dpr) as u32)
+                                .y_label_area_size((70.0 * self.dpr) as u32)
+                                .build_cartesian_2d((0.02..x_max).log_scale(), 0..c_max).unwrap();
+                            
                             chart.configure_mesh()
                                 .x_desc("population per square kilometer") 
                                 .x_label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))   
@@ -196,30 +212,17 @@ impl Component for PopulationPlot {
                                 .y_label_formatter(&|v| { format!("{}", *v as u32) })
                                 .draw()
                                 .unwrap();
-                        }
-                        
-                        self.coord_mappings = vec![];
-                        for r in data.iter() {
-                            let p = match show_counts {
-                                false => chart.backend_coord(&(r.pop_density, r.score)),
-                                true => chart.borrow_secondary().backend_coord(&(r.pop_density, r.count)),
-                            };
-                            self.coord_mappings.push(CoordMapping { x: p.0, y: p.1, id: r.id, name: r.name.clone() });
-                        }
-
-                        if !show_counts {
+                                
                             chart.draw_series(data.iter().map(|r| {
-                                let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                                Circle::new((r.pop_density, r.score), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-                            }))
-                            .unwrap();
-                        }
-                        else {
-                            chart.draw_secondary_series(data.iter().map(|r| {
                                 let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
                                 Circle::new((r.pop_density, r.count), point_size, RGBColor(rgb[0], rgb[1], rgb[2]).filled())
                             }))
                             .unwrap();
+                            
+                            for r in data.iter() {
+                                let p = chart.backend_coord(&(r.pop_density, r.count));
+                                self.coord_mappings.push(CoordMapping { x: p.0, y: p.1, id: r.id, name: r.name.clone() });
+                            };
                         }
                     },
                     PopulationPlotMsg::Clicked(e) => {

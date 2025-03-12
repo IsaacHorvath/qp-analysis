@@ -10,6 +10,7 @@ use yew_hooks::prelude::use_window_size;
 #[derive(Properties, PartialEq)]
 pub struct BreakdownProps {
   pub breakdown_type: BreakdownType,
+  pub visible: bool,
   pub word: String,
   pub show_counts: bool,
   pub get_speeches: Callback<OverlaySelection>,
@@ -23,12 +24,13 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
     let window_size = use_window_size();
 
     {
+        let visible = props.visible.clone();
         let data = data.clone();
         let loading = loading.clone();
         let word = props.word.clone();
         let breakdown_type = props.breakdown_type.clone();
         use_effect(move || {
-            if (*word_state) != word {
+            if (*word_state) != word && visible {
                 loading.set(true);
                 word_state.set(word.clone());
                 spawn_local(async move {
@@ -67,13 +69,18 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
     }
     
     html! {
-        <BreakdownPlot
-            breakdown_type={props.breakdown_type.clone()}
-            data={breakdown_data}
-            show_counts={props.show_counts}
-            loading={*loading}
-            window_width={window_size.0} 
-            get_speeches={&props.get_speeches}
-        />
+        if props.visible {
+            <BreakdownPlot
+                breakdown_type={props.breakdown_type.clone()}
+                data={breakdown_data}
+                show_counts={props.show_counts}
+                loading={*loading}
+                window_width={window_size.0} 
+                get_speeches={&props.get_speeches}
+            />
+        }
+        else {
+            <div />
+        }
     }
 }

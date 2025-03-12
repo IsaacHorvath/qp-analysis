@@ -3,7 +3,7 @@
     overflow: auto;
     background-color: #121212;
     margin: 0px;
-    padding-top: 2.75em;
+    padding-top: 2.25em;
 }
 
 .body-covered {
@@ -27,16 +27,43 @@
     background-color: #121212    
 }
 
+.form-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
 .interface form {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     color: #ffeba9;
+    background-color: #282828;
+    border-radius: 5px;
+    margin-bottom: 1em;
 }
 
 .interface form > div {
-    align-self: center;
-    margin-inline: 10px;
+    align-self: stretch;
+    padding: 0.5em 1em;
+    /*background-color: #282828;*/
+}
+
+.vis {
+    display: grid;
+    text-align: right;
+    grid-template-rows: 1fr 1fr;
+    grid-auto-flow: column;
+    column-gap: 1em;
+}
+
+.centered-box {
+    grid-row: 1 / span 2;
+    align-content: center;
+}
+
+.form-section {
+    display: flex;
+    align-items: center;
 }
 
 .word {

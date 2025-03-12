@@ -9,7 +9,8 @@ mod pages;
 mod components;
 
 fn switch(routes: Route) -> Html {
-    let provincial = web_sys::window().unwrap().document().unwrap().url().unwrap().contains("queen");
+    let url =web_sys::window().unwrap().document().unwrap().url().unwrap();
+    let provincial = url.contains("queen") || url.contains("localhost");
     match (routes, provincial) {
         (Route::Home, false) => html! { 
             <InfoPage />
