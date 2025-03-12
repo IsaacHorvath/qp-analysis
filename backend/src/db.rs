@@ -13,6 +13,8 @@ use db::province::dsl::{province, id as province_id, name as province_name, colo
 use db::riding::dsl::{riding, name as riding_name, population, area};
 use db::transcript::dsl::{transcript, link};
 use db::{count_words, concat};
+use diesel::debug_query;
+use diesel::query_builder::QueryFragment;
 
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
@@ -92,8 +94,32 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
                 sum(count_words(text, word)),
                 speaker_total_words,
             ))
+            .order(sum(count_words(text, word)).desc())
+            .limit(10)
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
     };
+    
+    let sql = debug_query::<diesel::mysql::Mysql, _> (&speech
+            .inner_join(speaker.inner_join(party))
+            .group_by((party_id, party_name, party_colour, party_total_words))
+            .select((
+                party_id,
+                party_name,
+                party_colour,
+                sum(count_words(text, word)),
+                party_total_words,
+            ))).to_string();
+            
+    let sql2 = debug_query::<diesel::mysql::Mysql, _> (&speech
+            .inner_join(speaker)
+            .group_by(speaker_id)
+            .select((
+                speaker_id,
+                sum(count_words(text, word))
+            ))).to_string();
+            
+    println!("{}", sql);
+    println!("{}", sql2);
     
     loaded
         .expect(format!("error loading {} word count", breakdown_type).as_str())

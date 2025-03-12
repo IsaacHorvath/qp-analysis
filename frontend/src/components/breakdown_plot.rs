@@ -124,11 +124,7 @@ impl Component for BreakdownPlot {
                 message.set_attribute("style", "display: none").expect("couldn't hide message");
                 let mut data = data.clone();
                         
-                // todo do these transformations in database
                 data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
-                if data.len() > 10 {
-                    data = data[0..10].to_vec();
-                }
                 
                 let window_width = ctx.props().window_width * 0.97;
                 let segs = data.len() as u32;
