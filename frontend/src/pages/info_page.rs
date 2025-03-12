@@ -72,9 +72,9 @@ pub fn info_page() -> Html {
         <div class="info">
             <h2>{"What is this tool?"}</h2>
             
-            <p>{"This tool is a word search that lets you compare how different categories of Canadian MPs use language in the House of Commons during the 44th parliament. You can access the tool by clicking the search button at the top of this page."}</p>
+            <p>{"This tool is a word search that lets you use basic charts to compare how different categories of Canadian MPs have used language in the House of Commons during the 44th parliament. You can access it by clicking the search button at the top of this page."}</p>
             
-            <p>{"To use the search interface, type in a word and hit submit to bring up graphs showing information on who used that word. For example, here's what will pop up if you try \"pipeline\":"}</p>
+            <p>{"To use the search interface, type in a word or phrase into the box labeled \"search term\" and hit the submit button. For example, here's what will pop up with the default settings if you enter \"pipeline\":"}</p>
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
@@ -87,7 +87,7 @@ pub fn info_page() -> Html {
             </div>
             <p>{"As you can see, the Green party uses this word a lot. They have only two members in the house, but those two said \"pipeline\" more than 200 times. Their bar on the chart above is much taller than other parties because it's measuring the number of pipeline mentions for every 100,000 words they spoke in total."}</p>
 
-            <p>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to the 120 members they have. If you're wondering where I got that 650 number, you can check \"show word counts\" at the top of the search interface and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
+            <p>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to their 120 seats, as well as the extra speaking time they get as the official opposition. If you're wondering where I got that 650 number, you can check \"total counts\" to the right of the search box and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
@@ -98,7 +98,7 @@ pub fn info_page() -> Html {
                     get_speeches={get_speeches("pipeline".to_owned())}
                 />
             </div>
-            <p>{"So what kind of meaning can we draw from this? Well, not too much at this point, and we have to be careful. There are a lot of limitations that come with using raw word counts to make assumptions about the kinds of things a group of people are talking about."}</p>
+            <p>{"So what kind of meaning can we draw from this? Not much, and we have to be careful. There are a lot of limitations that come with using raw word counts to make assumptions about the kinds of things a group of people are talking about."}</p>
 
             <p>{"Let's go back to our example. If you've ever followed Canadian federal politics, you might guess that members and supporters of the Green Party and the Conservative Party would have very different opinions on investment in and construction of oil and gas pipelines. So would it be fair to say that the Green Party spends a lot more of their (limited) time criticizing these pipelines than the Conservative Party spends defending them?"}</p>
             
@@ -127,8 +127,30 @@ pub fn info_page() -> Html {
 
             <h2>{"More Charts"}</h2>
 
-            //<p>{"There are a few other charts included that you can add to the view by clicking them at the top left:"}</p>
-            //<p>{"--"}</p>
+            <p>{"There are a few other charts included that you can add to the view by clicking the checkboxes that look like this in the interface:"}</p>
+            <div class="vis">
+                    // todo use small component
+                <div>
+                    <label for="show_party"> {"party"}</label>
+                    <input type="checkbox" id="show_party" />
+                </div>
+                <div>
+                    <label for="show_gender"> {"gender"}</label>
+                    <input type="checkbox" id="show_gender" />
+                </div>
+                <div>
+                    <label for="show_province"> {"province"}</label>
+                    <input type="checkbox" id="show_province" />
+                </div>
+                <div>
+                    <label for="show_speaker"> {"speaker"}</label>
+                    <input type="checkbox" id="show_speaker" />
+                </div>
+                <div class="centered-box">
+                    <label for="show_pop"> {"pop density"}</label>
+                    <input type="checkbox" id="show_pop" />
+                </div>
+            </div>
             <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
             <div class="info-chart">
                 <BreakdownPlot

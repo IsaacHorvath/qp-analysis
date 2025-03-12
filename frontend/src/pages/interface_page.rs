@@ -183,7 +183,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                         <input type="text" id="word_input" value={(*input_value).clone()} onchange={on_input} class="word"/>
                     </div>
                     <div class="form-section">
-                        <label for="show_counts"> {"show total counts"}</label>
+                        <label for="show_counts"> {"total counts"}</label>
                         <input type="checkbox" id="show_counts" onclick={on_show_counts}/>
                     </div>
                     <div class="form-section">
