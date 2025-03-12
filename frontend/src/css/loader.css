@@ -1,10 +1,10 @@
 .loader-wrapper {
-    width: 200px;
-    height: 200px;
+    grid-column: 1;
+    grid-row: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
+    z-index: 40;
 }
 
 .loader {

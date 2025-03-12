@@ -173,7 +173,7 @@ pub fn info_page() -> Html {
             <p>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
             <div class="info-chart">
                 <PopulationPlot
-                    data={gaza_pop_data()}
+                    data={Some(Ok(gaza_pop_data()))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 

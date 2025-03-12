@@ -30,10 +30,6 @@
 
 
 /* plots */
-.plot-wrapper {
-    padding: 1%;
-}
-
 .plot {
     margin: 0.5%;
     overflow: auto;
@@ -42,14 +38,26 @@
     border-radius: 20px;
     padding: 1%;
     width: fit-content;
+    height: fit-content;
     display: grid;
+}
+
+.plot-heading {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    color: #ffffff;
+    font-family: sans-serif;
 }
 
 .canvas {
     grid-column: 1;
     grid-row: 1;
     width: min(max(900px, 97vw), 1800px);
-    height: 500px;
+    height: 400px;
+    margin-top: 3em;
 }
 
 .inter-canvas {
@@ -57,7 +65,8 @@
     grid-row: 1;
     z-index: 10;
     width: min(max(900px, 97vw), 1800px);
-    height: 500px;
+    height: 400px;
+    margin-top: 3em;
 }
 
 

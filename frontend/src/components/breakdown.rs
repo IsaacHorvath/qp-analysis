@@ -58,7 +58,6 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
         });
     }
 
-    // todo clean this up
     let mut breakdown_data: Option<Result<Vec<BreakdownResponse>, String>> = None;
     if let Some(res) = data.as_ref() {
         match res {

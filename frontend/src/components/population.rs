@@ -56,36 +56,26 @@ pub fn population(props: &PopulationProps) -> Html {
         });
     }
 
-    match data.as_ref() {
-        None => {
-            html! {
-                <div />
-            }
-        }
-        Some(Ok(data)) => {
-            match serde_json::from_str::<Option<Vec<PopulationResponse>>>(data).unwrap() {
-                None => {
-                    html! {
-                        <div />
-                    }
-                }
-                Some(population_data) => {
-                    html! {
-                        <PopulationPlot
-                            data={population_data.clone()}
-                            show_counts={props.show_counts}
-                            loading={*loading}
-                            window_width={window_size.0} 
-                            get_speeches={&props.get_speeches}
-                        />
-                    }
+    let mut population_data: Option<Result<Vec<PopulationResponse>, String>> = None;
+    if let Some(res) = data.as_ref() {
+        match res {
+            Ok(data) => {
+                if let Some(parsed) = serde_json::from_str::<Option<Vec<PopulationResponse>>>(data).unwrap() {
+                    population_data = Some(Ok(parsed));
                 }
             }
-        }
-        Some(Err(err)) => {
-            html! {
-                <div>{"Error requesting data from server: "}{err}</div>
+            Err(err) => {
+                population_data = Some(Err(err.to_string()));
             }
         }
+    }
+    html! {
+        <PopulationPlot
+            data={population_data}
+            show_counts={props.show_counts}
+            loading={*loading}
+            window_width={window_size.0} 
+            get_speeches={&props.get_speeches}
+        />
     }
 }
