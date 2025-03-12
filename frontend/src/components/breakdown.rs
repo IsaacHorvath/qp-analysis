@@ -60,17 +60,12 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
 
     let mut breakdown_data: Option<Result<Vec<BreakdownResponse>, String>> = None;
     if let Some(res) = data.as_ref() {
-        match res {
-            Ok(data) => {
-                if let Some(parsed) = serde_json::from_str::<Option<Vec<BreakdownResponse>>>(data).unwrap() {
-                    breakdown_data = Some(Ok(parsed));
-                }
-            }
-            Err(err) => {
-                breakdown_data = Some(Err(err.to_string()));
-            }
-        }
+        breakdown_data = match res {
+            Ok(data) => Some(Ok(serde_json::from_str::<Vec<BreakdownResponse>>(data).unwrap())),
+            Err(err) => Some(Err(err.to_string())),
+        };
     }
+    
     html! {
         <BreakdownPlot
             breakdown_type={props.breakdown_type.clone()}

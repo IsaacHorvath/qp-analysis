@@ -45,11 +45,7 @@ pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
         .collect()
 }
 
-pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Option<Vec<BreakdownResponse>> {
-    if breakdown_type == BreakdownType::Province && env::var("DATA_SOURCE").unwrap() != "federal_house" {
-        return None;
-    }
-    
+pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speaker.inner_join(party))
@@ -99,7 +95,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
     };
     
-    Some(loaded    
+    loaded
         .expect(format!("error loading {} word count", breakdown_type).as_str())
         .into_iter()
         .filter(|row| row.3.unwrap() > 0)
@@ -110,14 +106,10 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
             count: row.3.unwrap() as i32,
             score: 100000.0/(row.4 as f32)*(row.3.unwrap() as f32), // todo: this should be in sql
         } })
-        .collect())
+        .collect()
 }
 
-pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -> Option<Vec<PopulationResponse>> {
-    if env::var("DATA_SOURCE").unwrap() != "federal_house" {
-        return None;
-    }
-    
+pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -> Vec<PopulationResponse> {
     let loaded = speech
         .filter(speaker_total_words.gt(0))
         .inner_join(speaker.inner_join(party).inner_join(riding))
@@ -133,7 +125,7 @@ pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -
         ))
         .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection);
     
-    Some(loaded    
+    loaded
         .expect("error loading population density word count")
         .into_iter()
         //.filter(|row| row.3.unwrap() > 0)
@@ -146,7 +138,7 @@ pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -
             count: row.5.unwrap() as i32,
             score: 100000.0/(row.6 as f32)*(row.5.unwrap() as f32), // todo: this should be in sql
         } })
-        .collect())
+        .collect()
 }
 
 pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownType, id: i32, word: &str) -> Vec<SpeechResponse> {

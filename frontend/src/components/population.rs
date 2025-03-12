@@ -58,17 +58,12 @@ pub fn population(props: &PopulationProps) -> Html {
 
     let mut population_data: Option<Result<Vec<PopulationResponse>, String>> = None;
     if let Some(res) = data.as_ref() {
-        match res {
-            Ok(data) => {
-                if let Some(parsed) = serde_json::from_str::<Option<Vec<PopulationResponse>>>(data).unwrap() {
-                    population_data = Some(Ok(parsed));
-                }
-            }
-            Err(err) => {
-                population_data = Some(Err(err.to_string()));
-            }
-        }
+        population_data = match res {
+            Ok(data) => Some(Ok(serde_json::from_str::<Vec<PopulationResponse>>(data).unwrap())),
+            Err(err) => Some(Err(err.to_string())),
+        };
     }
+    
     html! {
         <PopulationPlot
             data={population_data}

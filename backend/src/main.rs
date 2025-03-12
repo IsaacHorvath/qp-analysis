@@ -70,7 +70,7 @@ async fn speakers() -> Json<Vec<SpeakerResponse>> {
     Json(get_speakers(&mut connection))
 }
 
-async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Json<Option<Vec<BreakdownResponse>>> {
+async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Json<Vec<BreakdownResponse>> {
     let mut connection = establish_connection();
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())
         .expect(format!("couldn't process breakdown type {}", breakdown_type).as_str());
@@ -81,7 +81,7 @@ async fn breakdown(Path(breakdown_type): Path<String>, Json(payload): Json<DataR
     Json(get_breakdown_word_count(&mut connection, breakdown_type, &search))
 }
 
-async fn population(Json(payload): Json<DataRequest>) -> Json<Option<Vec<PopulationResponse>>> {
+async fn population(Json(payload): Json<DataRequest>) -> Json<Vec<PopulationResponse>> {
     let mut connection = establish_connection();
     let search = payload.search
         .to_lowercase()

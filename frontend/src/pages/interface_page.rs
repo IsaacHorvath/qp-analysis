@@ -8,10 +8,13 @@ use crate::components::population::Population;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use std::collections::HashMap;
 use std::rc::Rc;
-//use log::info;
 
+#[derive(Properties, PartialEq)]
+pub struct InterfacePageProps {
+  pub provincial: bool,
+}
 #[function_component(InterfacePage)]
-pub fn interface_page() -> Html {
+pub fn interface_page(props: &InterfacePageProps) -> Html {
     let speakers = use_state(|| None);
     
     let loading = use_state(|| false);
@@ -114,9 +117,13 @@ pub fn interface_page() -> Html {
             <div class="charts">
                 <Breakdown breakdown_type={BreakdownType::Party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
                 <Breakdown breakdown_type={BreakdownType::Gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                if !props.provincial {
+                    <Breakdown breakdown_type={BreakdownType::Province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                }
                 <Breakdown breakdown_type={BreakdownType::Speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
-                <Population word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                if !props.provincial {
+                    <Population word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                }
             </div>
             
             if (*selection).id != 0 {

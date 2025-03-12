@@ -18,7 +18,7 @@ fn switch(routes: Route) -> Html {
             <ProvInfoPage />
         },
         (Route::Interface, _) => html! { 
-            <InterfacePage />
+            <InterfacePage {provincial}/>
         },
         (Route::NotFound, _) => html! {
             <NotFoundPage />
