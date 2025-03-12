@@ -38,6 +38,7 @@ struct CoordMapping {
 pub struct BreakdownPlot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
+    message: NodeRef,
     dpr: f64,
     coord_mappings: Vec<CoordMapping>,
     hover_id: i32,
@@ -70,6 +71,7 @@ impl Component for BreakdownPlot {
         BreakdownPlot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
+            message: NodeRef::default(),
             dpr: 1.0,
             coord_mappings: vec![],
             hover_id: 0,
@@ -87,6 +89,7 @@ impl Component for BreakdownPlot {
                     <div class="loader"/>
                 </div>
                 <h2 class="plot-heading">{&format!("{} breakdown", &ctx.props().breakdown_type)}</h2>
+                <h3 class="plot-message" ref={self.message.clone()} />
                 <canvas class="inter-canvas" {onclick} {onmousemove} ref={self.inter_canvas.clone()} />
                 <canvas class="canvas" ref={self.canvas.clone()} />
             </div>
@@ -96,6 +99,7 @@ impl Component for BreakdownPlot {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
+        let message: HtmlCanvasElement = self.message.cast().unwrap();
         let breakdown_type = &ctx.props().breakdown_type.clone();
         
         match &ctx.props().data {
@@ -103,11 +107,21 @@ impl Component for BreakdownPlot {
                 canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
                 inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
             },
-            Some(Err(_e)) => {
+            Some(Err(e)) => {
                 canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
                 inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
+                message.set_attribute("style", "display: initial").expect("couldn't show message");
+                message.set_inner_text(&format!("server error: {}", e));
             },
             Some(Ok(data)) => {
+                if data.len() == 0 {
+                    canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
+                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
+                    message.set_attribute("style", "display: initial").expect("couldn't show message");
+                    message.set_inner_text("no results found");
+                    return false;
+                }
+                message.set_attribute("style", "display: none").expect("couldn't hide message");
                 let mut data = data.clone();
                         
                 // todo do these transformations in database

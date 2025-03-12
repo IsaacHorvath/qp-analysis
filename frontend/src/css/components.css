@@ -52,6 +52,11 @@
     font-family: sans-serif;
 }
 
+.plot-message {
+    display: none;
+    text-align: center;
+}
+
 .canvas {
     grid-column: 1;
     grid-row: 1;
