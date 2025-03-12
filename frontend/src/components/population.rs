@@ -25,11 +25,12 @@ pub fn population(props: &PopulationProps) -> Html {
     let window_size = use_window_size();
 
     {
+        let visible = props.visible.clone();
         let data = data.clone();
         let loading = loading.clone();
         let word = props.word.clone();
         use_effect(move || {
-            if (*word_state) != word {
+            if (*word_state) != word && visible {
                 loading.set(true);
                 word_state.set(word.clone());
                 spawn_local(async move {
