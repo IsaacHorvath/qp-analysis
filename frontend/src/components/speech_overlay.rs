@@ -75,7 +75,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                     { match data.as_ref() {
                         None => {
                             html! {
-                                <div style="text-align: center"> {"loading..."} </div>
+                                <div class="loader-speech" />
                             }
                         }
                         Some(Ok(data)) => {
