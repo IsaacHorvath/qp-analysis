@@ -19,7 +19,7 @@ pub enum BreakdownPlotMsg {
 #[derive(Properties, PartialEq)]
 pub struct BreakdownPlotProps {
     pub breakdown_type: BreakdownType,
-    pub data: Vec<BreakdownResponse>,
+    pub data: Option<Result<Vec<BreakdownResponse>, String>>,
     pub show_counts: bool,
     pub loading: bool,
     pub window_width: f64,
@@ -80,8 +80,13 @@ impl Component for BreakdownPlot {
         let onclick = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Clicked(e));
         let onmousemove = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Hover(e));
         
+        let loader_style = format!("display: {}", if ctx.props().loading {"initial"} else {"none"});
+        
         html! (
             <div class="plot" >
+                <div class="loader-wrapper">
+                    <div class="loader" style={loader_style}/>
+                </div>
                 <canvas class="inter-canvas" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
                 <canvas class="canvas" ref = {self.canvas.clone()}/>
             </div>
@@ -92,7 +97,18 @@ impl Component for BreakdownPlot {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
         let breakdown_type = &ctx.props().breakdown_type.clone();
-        let mut data: Vec<BreakdownResponse> = ctx.props().data.clone();
+        
+        if let None = &ctx.props().data {
+            canvas.set_attribute("style", "width: 200px; height: 200px").expect("couldn't set plot dimensions");
+            inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
+            return false;
+        }
+        if let Some(Err(_e)) = &ctx.props().data {
+            canvas.set_attribute("style", "width: 200px; height: 200px").expect("couldn't set plot dimensions");
+            inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
+            return false;
+        }
+        let mut data: Vec<BreakdownResponse> = ctx.props().data.clone().unwrap().unwrap();
                 
         // todo do these transformations in database
         data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
@@ -225,7 +241,7 @@ impl Component for BreakdownPlot {
                 
                 if cm.id > 0 {
                     let breakdown_type = breakdown_type.clone();
-                    let heading = ctx.props().data.iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                    let heading = ctx.props().data.as_ref().unwrap().as_ref().unwrap().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
                     ctx.props().get_speeches.emit(OverlaySelection {breakdown_type, id: cm.id, heading});
                 }
             },

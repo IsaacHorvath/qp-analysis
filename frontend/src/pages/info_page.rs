@@ -78,7 +78,7 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
-                    data={pipeline_party_data()}
+                    data={Some(Ok(pipeline_party_data()))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 
@@ -91,7 +91,7 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Party}
-                    data={pipeline_party_data()}
+                    data={Some(Ok(pipeline_party_data()))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 
@@ -133,7 +133,7 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Gender}
-                    data={mental_gender_data()}
+                    data={Some(Ok(mental_gender_data()))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 
@@ -146,7 +146,7 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Province}
-                    data={trump_province_data()}
+                    data={Some(Ok(trump_province_data()))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 
@@ -159,7 +159,7 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <BreakdownPlot
                     breakdown_type={BreakdownType::Speaker}
-                    data={pharma_speaker_data()}
+                    data={Some(Ok(pharma_speaker_data()))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 

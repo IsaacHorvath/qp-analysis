@@ -30,6 +30,10 @@
 
 
 /* plots */
+.plot-wrapper {
+    padding: 1%;
+}
+
 .plot {
     margin: 0.5%;
     overflow: auto;
