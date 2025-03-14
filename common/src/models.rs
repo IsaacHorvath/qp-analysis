@@ -11,15 +11,17 @@ pub enum BreakdownType {
     Speaker,
 }
 
+pub struct BreakdownTypeParseError;
+
 impl FromStr for BreakdownType {
-    type Err = ();
+    type Err = BreakdownTypeParseError;
     fn from_str(input: &str) -> Result<BreakdownType, Self::Err> {
         match input.to_lowercase().as_str() {
             "party" => Ok(BreakdownType::Party),
             "gender" => Ok(BreakdownType::Gender),
             "province" => Ok(BreakdownType::Province),
             "speaker" => Ok(BreakdownType::Speaker),
-            _ => Err(())
+            _ => Err(BreakdownTypeParseError)
         }
     }
 }

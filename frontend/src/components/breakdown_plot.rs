@@ -111,7 +111,7 @@ impl Component for BreakdownPlot {
                 canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
                 inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
                 message.set_attribute("style", "display: initial").expect("couldn't show message");
-                message.set_inner_text(&format!("server error: {}", e));
+                message.set_inner_text(&format!("error: {}", e));
             },
             Some(Ok(data)) => {
                 if data.len() == 0 {

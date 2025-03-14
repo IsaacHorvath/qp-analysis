@@ -8,7 +8,7 @@ axum = "0.8.1"
 clap = { version = "4.5.29", features = ["derive"] }
 common = { version = "0.1.0", path = "../common" }
 db = { version = "0.1.0", path = "../db" }
-diesel = { version = "2.2.7", features = ["mysql", "time"] }
+diesel = { version = "2.2.7", features = ["mysql", "r2d2", "time"] }
 dotenvy = "0.15.7"
 log = "0.4.25"
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }

@@ -1,6 +1,6 @@
 use common::models::*;
 use crate::components::breakdown_plot::BreakdownPlot;
-use crate::components::speech_overlay::{OverlaySelection};
+use crate::components::speech_overlay::OverlaySelection;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -40,17 +40,12 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
                         .header("Content-Type", "application/json")
                         .json(&breakdown_request).expect("couldn't create request body")
                         .send().await.unwrap();
-                    let result = {
-                        if !resp.ok() {
-                            Err(format!(
-                                "error fetching breakdown data {} ({})",
-                                resp.status(),
-                                resp.status_text()
-                            ))
-                        } else {
-                            resp.text().await.map_err(|err| err.to_string())
-                        }
-                    };
+                        
+                    let mut result = resp.text().await.map_err(|err| err.to_string());
+                    if !resp.ok() { 
+                        result = match result {Ok(e) => Err(e), e => e};
+                    }
+                    
                     data.set(Some(result));
                     loading.set(false);
                 });
