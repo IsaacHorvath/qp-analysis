@@ -8,7 +8,6 @@ use common::models::{BreakdownType, BreakdownResponse};
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{max, min};
 use wasm_bindgen::JsCast;
-//use log::info;
 
 pub enum BreakdownPlotMsg {
     Redraw,
@@ -38,7 +37,6 @@ struct CoordMapping {
 pub struct BreakdownPlot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
-    message: NodeRef,
     dpr: f64,
     coord_mappings: Vec<CoordMapping>,
     hover_id: i32,
@@ -47,6 +45,18 @@ pub struct BreakdownPlot {
 fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
     canvas.get_context("2d").unwrap().unwrap().dyn_into::<CanvasRenderingContext2d>().unwrap()
 }
+
+fn get_width(segs: u32, breakdown_type: &BreakdownType, window_width: &f64) -> u32 {
+    let ww = (window_width * 0.97) as u32;
+    match breakdown_type {
+        BreakdownType::Speaker => min(max(segs*90, ww), segs*160),
+        BreakdownType::Party => min(max(segs*80, ww), segs*160),
+        BreakdownType::Gender => min(max(segs*80, ww), segs*160),
+        BreakdownType::Province => min(max(segs*90, ww), segs*160),
+    }
+}
+
+fn get_height() -> u32 { 500 } // todo make this responsive or something
 
 impl BreakdownPlot {
     fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
@@ -62,7 +72,6 @@ impl BreakdownPlot {
 }
 
 impl Component for BreakdownPlot {
-
     type Message = BreakdownPlotMsg;
     type Properties = BreakdownPlotProps;
 
@@ -71,7 +80,6 @@ impl Component for BreakdownPlot {
         BreakdownPlot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
-            message: NodeRef::default(),
             dpr: 1.0,
             coord_mappings: vec![],
             hover_id: 0,
@@ -81,17 +89,54 @@ impl Component for BreakdownPlot {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let onclick = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Clicked(e));
         let onmousemove = ctx.link().callback(|e: MouseEvent| BreakdownPlotMsg::Hover(e));
+        let mut canvas_style = "display: none".to_string();
+        let mut inter_canvas_style = "display: none".to_string();
+        let mut message_style = "display: none";
+        let mut message = "no results found".to_string();
         let loader_style = if ctx.props().loading {"display: flex"} else {"display: none"};
+        
+        let props = &ctx.props();
+        match &props.data {
+            None => {},
+            Some(Err(e)) => {
+                message = format!("error: {}", e);
+                message_style = "";
+            },
+            Some(Ok(data)) => {
+                let segs = data.len() as u32;
+                if segs == 0 { message_style = ""; }
+                else {
+                    let width = get_width(segs, &props.breakdown_type, &props.window_width);
+                    let height = get_height();
+                    
+                    let canvas_opacity = if ctx.props().loading {"0.25"} else {"1"};
+                    canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
+                    inter_canvas_style = format!("width: {}px; height: {}px", width, height);
+                }
+            }
+        }
+        
+        let heading = &format!("{} breakdown", &ctx.props().breakdown_type);
         
         html! (
             <div class="plot" >
                 <div class="loader-wrapper" style={loader_style}>
                     <div class="loader"/>
                 </div>
-                <h2 class="plot-heading">{&format!("{} breakdown", &ctx.props().breakdown_type)}</h2>
-                <h3 class="plot-message" ref={self.message.clone()} />
-                <canvas class="inter-canvas" {onclick} {onmousemove} ref={self.inter_canvas.clone()} />
-                <canvas class="canvas" ref={self.canvas.clone()} />
+                <h2 class="plot-heading">{heading}</h2>
+                <h3 class="plot-message" style={message_style}>{message}</h3>
+                <canvas
+                    class="inter-canvas"
+                    style={inter_canvas_style}
+                    {onclick}
+                    {onmousemove}
+                    ref={self.inter_canvas.clone()}
+                />
+                <canvas
+                    class="canvas"
+                    style={canvas_style}
+                    ref={self.canvas.clone()}
+                />
             </div>
         )
     }
@@ -99,70 +144,28 @@ impl Component for BreakdownPlot {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
-        let message: HtmlCanvasElement = self.message.cast().unwrap();
         let breakdown_type = &ctx.props().breakdown_type.clone();
         
-        match &ctx.props().data {
-            None => {
-                canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-            },
-            Some(Err(e)) => {
-                canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                message.set_attribute("style", "display: initial").expect("couldn't show message");
-                message.set_inner_text(&format!("error: {}", e));
-            },
-            Some(Ok(data)) => {
-                if data.len() == 0 {
-                    canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                    message.set_attribute("style", "display: initial").expect("couldn't show message");
-                    message.set_inner_text("no results found");
-                    return false;
-                }
-                message.set_attribute("style", "display: none").expect("couldn't hide message");
-                let mut data = data.clone();
-                        
-                data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
-                
-                let window_width = ctx.props().window_width * 0.97;
-                let segs = data.len() as u32;
-                let width = match *breakdown_type {
-                    BreakdownType::Speaker => min(max(segs*90, window_width as u32), segs*160),
-                    BreakdownType::Party => min(max(segs*80, window_width as u32), segs*160),
-                    BreakdownType::Gender => min(max(segs*80, window_width as u32), segs*160),
-                    BreakdownType::Province => min(max(segs*90, window_width as u32), segs*160),
-                };
-                let height: u32 = 500;
-                
-                self.dpr = window().device_pixel_ratio();
-                let mut canvas_width = width;
-                let mut canvas_height = height;
-                if self.dpr >= 1.0 {
-                    canvas_width = (self.dpr * canvas_width as f64) as u32;
-                    canvas_height = (self.dpr * canvas_height as f64) as u32;
-                }
-                
+        if let Some(Ok(data)) = &ctx.props().data {
+            let segs = data.len() as u32;
+            if segs > 0 {
                 match msg {
                     BreakdownPlotMsg::Redraw => {
-                        if ctx.props().loading {
-                            canvas.set_attribute("style", &format!("display: initial; opacity: 0.25; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
-                            inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                        }
-                        else {
-                            canvas.set_attribute("style", &format!("display: initial; opacity: 1; width: {}px; height: {}px", width, height)).expect("couldn't set opacity");
-                            inter_canvas.set_attribute("style", &format!("width: {}px; height: {}px", width, height)).expect("couldn't set interactive dimensions");
-                        }
-                        
+                        self.dpr = window().device_pixel_ratio().max(1.0);
+                        let canvas_width = (self.dpr * get_width(segs, breakdown_type, &ctx.props().window_width) as f64) as u32;
+                        let canvas_height = (self.dpr * get_height() as f64) as u32;
                         canvas.set_height(canvas_height);
                         inter_canvas.set_height(canvas_height);
                         canvas.set_width(canvas_width);
                         inter_canvas.set_width(canvas_width);
+                        
+                        // todo get rid of this clone
+                        let mut data = data.clone();
+                        data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
 
                         let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
                         let drawing_area = backend.into_drawing_area();
-                        let mut label_size = (window_width.sqrt() / 2.5 * self.dpr) as u32;
+                        let mut label_size = (&ctx.props().window_width.sqrt() / 2.5 * self.dpr) as u32;
                         
                         if *breakdown_type == BreakdownType::Speaker || *breakdown_type == BreakdownType::Province {
                             label_size = label_size - 4;
@@ -262,6 +265,7 @@ impl Component for BreakdownPlot {
                             if cm.id != self.hover_id {
                                 self.hover_id = cm.id;
                                 let context = canvas_context(&inter_canvas);
+                                context.clear_rect(0.0, 0.0, inter_canvas.width() as f64, inter_canvas.height() as f64);
                                 
                                 let top = min(cm.top, cm.bottom - 20);
                                 if cm.id != 0  {
@@ -269,15 +273,12 @@ impl Component for BreakdownPlot {
                                     context.set_stroke_style_str("#fee17d");
                                     context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
                                 }
-                                else {
-                                    context.clear_rect(0.0, 0.0, canvas_width.into(), canvas_height.into());
-                                }
                             }
                         }
                     },
                 };
-            },
-        };
+            }
+        }
         false
     }
     

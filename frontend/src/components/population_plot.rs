@@ -5,7 +5,7 @@ use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use gloo::utils::window;
 use common::models::{BreakdownType, PopulationResponse};
 use crate::components::speech_overlay::OverlaySelection;
-use std::cmp::max;
+use std::cmp::{min, max};
 use wasm_bindgen::JsCast;
 use log::info;
 
@@ -44,7 +44,6 @@ struct PopDensity {
 pub struct PopulationPlot {
     canvas: NodeRef,
     inter_canvas: NodeRef,
-    message: NodeRef,
     dpr: f64,
     coord_mappings: Vec<CoordMapping>,
     hover_id: i32,
@@ -53,6 +52,12 @@ pub struct PopulationPlot {
 fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
     canvas.get_context("2d").unwrap().unwrap().dyn_into::<CanvasRenderingContext2d>().unwrap()
 }
+
+fn get_width(window_width: &f64) -> u32 {
+    min(max(900, (window_width * 0.97) as u32), 1800)
+}
+
+fn get_height() -> u32 { 400 } // todo make this responsive or something
 
 impl PopulationPlot {
     fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
@@ -78,7 +83,6 @@ impl Component for PopulationPlot {
         PopulationPlot {
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
-            message: NodeRef::default(),
             dpr: 1.0,
             coord_mappings: vec![],
             hover_id: 0,
@@ -88,7 +92,28 @@ impl Component for PopulationPlot {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let onclick = ctx.link().callback(|e: MouseEvent| PopulationPlotMsg::Clicked(e));
         let onmousemove = ctx.link().callback(|e: MouseEvent| PopulationPlotMsg::Hover(e));
+        let mut canvas_style = "display: none".to_string();
+        let mut inter_canvas_style = "display: none".to_string();
+        let mut message_style = "display: none";
+        let mut message = "no results found".to_string();
         let loader_style = if ctx.props().loading {"display: flex"} else {"display: none"};
+        
+        let props = &ctx.props();
+        match &props.data {
+            None => {},
+            Some(Err(e)) => {
+                message = format!("error: {}", e);
+                message_style = "";
+            },
+            Some(Ok(data)) => {
+                let segs = data.len() as u32;
+                if segs == 0 || data.iter().filter(|d| d.score > 0.0).count() == 0 { message_style = ""; }
+                else {
+                    canvas_style = format!("opacity: {}", if ctx.props().loading {"0.25"} else {"1"});
+                    inter_canvas_style = "".to_string();
+                }
+            }
+        }
         
         html! (
             <div class="plot" >
@@ -96,9 +121,19 @@ impl Component for PopulationPlot {
                     <div class="loader"/>
                 </div>
                 <h2 class="plot-heading">{"population density plot"}</h2>
-                <h3 class="plot-message" ref={self.message.clone()} />
-                <canvas class="inter-canvas" {onclick} {onmousemove} ref = {self.inter_canvas.clone()}/>
-                <canvas class="canvas" ref = {self.canvas.clone()}/>
+                <h3 class="plot-message" style={message_style}>{message}</h3>
+                <canvas
+                    class="inter-canvas"
+                    style={inter_canvas_style}
+                    {onclick}
+                    {onmousemove}
+                    ref={self.inter_canvas.clone()}
+                />
+                <canvas
+                    class="canvas"
+                    style={canvas_style}
+                    ref={self.canvas.clone()}
+                />
             </div>
         )
     }
@@ -106,50 +141,17 @@ impl Component for PopulationPlot {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         let canvas: HtmlCanvasElement = self.canvas.cast().unwrap();
         let inter_canvas: HtmlCanvasElement = self.inter_canvas.cast().unwrap();
-        let message: HtmlCanvasElement = self.message.cast().unwrap();
         
-        match &ctx.props().data {
-            None => {
-                canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-            },
-            Some(Err(e)) => {
-                canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                message.set_attribute("style", "display: initial").expect("couldn't show message");
-                message.set_inner_text(&format!("server error: {}", e));
-            },
-            Some(Ok(data)) => {
-                if data.iter().filter(|d| d.score > 0.0).count() == 0 {
-                    canvas.set_attribute("style", "display: none").expect("couldn't set plot dimensions");
-                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                    message.set_attribute("style", "display: initial").expect("couldn't show message");
-                    message.set_inner_text("no results found");
-                    return false;
-                }
-                if ctx.props().loading {
-                    canvas.set_attribute("style", "opacity: 0.25; display: initial").expect("couldn't set opacity");
-                    inter_canvas.set_attribute("style", "display: none").expect("couldn't hide interactive");
-                }
-                else {
-                    canvas.set_attribute("style", "opacity: 1; display: initial").expect("couldn't set opacity");
-                    inter_canvas.set_attribute("style", "display: initial").expect("couldn't show interactive");
-                }
-                
-                let rect = canvas.get_bounding_client_rect();
-                self.dpr = window().device_pixel_ratio();
-                
-                let mut canvas_width = rect.width();
-                let mut canvas_height = rect.height();
-                if self.dpr >= 1.0 {
-                    canvas_width = self.dpr * canvas_width;
-                    canvas_height = self.dpr * canvas_height;
-                }
-                
+        if let Some(Ok(data)) = &ctx.props().data {
+            let segs = data.len();
+            if segs > 0 && data.iter().filter(|d| d.score > 0.0).count() > 0 {
+                self.dpr = window().device_pixel_ratio().max(1.0);
                 let point_size = (5.0*self.dpr) as u32;
                 
                 match msg {
                     PopulationPlotMsg::Redraw => {
+                        let canvas_width = self.dpr * get_width(&ctx.props().window_width) as f64;
+                        let canvas_height = self.dpr * get_height() as f64;
                         canvas.set_height(canvas_height as u32);
                         inter_canvas.set_height(canvas_height as u32);
                         canvas.set_width(canvas_width as u32);
@@ -253,7 +255,7 @@ impl Component for PopulationPlot {
                             if cm.id != self.hover_id {
                                 self.hover_id = cm.id;
                                 let context = canvas_context(&inter_canvas);
-                                context.clear_rect(0.0, 0.0, canvas_width.into(), canvas_height.into());
+                                context.clear_rect(0.0, 0.0, inter_canvas.width() as f64, inter_canvas.width() as f64);
                                 
                                 let left = (cm.x - 10) as f64;
                                 let bottom = (cm.y - 10) as f64;
