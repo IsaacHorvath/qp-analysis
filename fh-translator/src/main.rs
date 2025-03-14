@@ -47,7 +47,7 @@ pub fn main() {
         let mut speaker: Speaker = Default::default();
         let mut speech = "".to_string();
         let mut start_time = time;
-        let time_format = format_description!("([hour][minute])");
+        //let time_format = format_description!("([hour][minute])");
         
         for sb in doc.descendants().filter(|n| n.has_tag_name("SubjectOfBusiness")) {
             if let Some(timestamp) = sb.children().find(|n| n.has_tag_name("Timestamp")) {
@@ -194,11 +194,10 @@ fn parse_speaker(connection: &mut MysqlConnection, name: &str, house_speaker: &s
         .replace("Gabriel-Marie-Marie", "Gabriel Ste-Marie")
         .replace("‑", "-");
     let title_reg = RegexBuilder::new(titles).case_insensitive(true).build().unwrap();
-    let mut speaker = Speaker::default();
-    if let Some(title) = title_reg.captures(&name) {
+    if let Some(_title) = title_reg.captures(&name) {
         let reg = RegexBuilder::new(&(titles.to_owned() + r#"\s+"# + names)).case_insensitive(true).build().unwrap();
         let Some(captures) = reg.captures(&name) else { panic!("{}", name) };
-        speaker = get_speaker_by_name(connection, &captures[2], &captures[captures.len()-1]);
+        get_speaker_by_name(connection, &captures[2], &captures[captures.len()-1])
     }
     else {
         let name = name
@@ -210,9 +209,8 @@ fn parse_speaker(connection: &mut MysqlConnection, name: &str, house_speaker: &s
             .replace("The Chair", "Chris d'Entremont");
         let reg = Regex::new(names).unwrap();
         let Some(captures) = reg.captures(&name) else { panic!("{}", name) };
-        speaker = get_speaker_by_name(connection, &captures[1], &captures[captures.len()-1]);
+        get_speaker_by_name(connection, &captures[1], &captures[captures.len()-1])
     }
-    speaker
 }
 
 fn parse_time(date: Date, text: &str) -> PrimitiveDateTime {
