@@ -210,7 +210,7 @@ pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownT
     loaded
         .expect(format!("error loading speeches for {} {}, {}", breakdown_type, id, word).as_str())
         .into_iter()
-        .map(|row| { SpeechResponse { // todo: this should be modelled select instead of mapping it, database types go into common
+        .map(|row| { SpeechResponse { // todo: this should be modelled select instead of mapping it
             speaker: row.0,
             text: row.1,
             link: row.2,

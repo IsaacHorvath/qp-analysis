@@ -14,12 +14,13 @@ use std::path::PathBuf;
 use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
-use crate::db::*;
+use crate::dummy_db::*;
 use crate::error::AppError;
 use common::models::*;
 
 mod error;
-mod db;
+mod dummy_db;
+// todo use clap for dev dummy db
 
 #[derive(Parser, Debug)]
 #[clap(name = "backend", about = "queens park analysis backend")]
@@ -65,7 +66,7 @@ async fn main() {
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {
-        port = port_env.parse::<u16>().unwrap();
+        port = port_env.parse::<u16>().expect("couldn't parse port into u16");
     }
         
     let sock_addr = SocketAddr::from((
