@@ -1,12 +1,14 @@
 // todo combine with breakdown
 
 use common::models::*;
-use crate::components::population_plot::PopulationPlot;
+use crate::components::plot::Plot;
+use crate::components::population_plot_engine::PopulationEngine;
 use crate::components::speech_overlay::{OverlaySelection};
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
+use std::rc::Rc;
 //use log::info;
 
 #[derive(Properties, PartialEq)]
@@ -60,17 +62,17 @@ pub fn population(props: &PopulationProps) -> Html {
         });
     }
 
-    let mut population_data: Option<Result<Vec<PopulationResponse>, String>> = None;
+    let mut population_data: Option<Result<Rc<Vec<PopulationResponse>>, String>> = None;
     if let Some(res) = data.as_ref() {
         population_data = match res {
-            Ok(data) => Some(Ok(serde_json::from_str::<Vec<PopulationResponse>>(data).unwrap())),
+            Ok(data) => Some(Ok(Rc::from(serde_json::from_str::<Vec<PopulationResponse>>(data).unwrap()))),
             Err(err) => Some(Err(err.to_string())),
         };
     }
     
     html! {
         if props.visible {
-            <PopulationPlot
+            <Plot<PopulationEngine, PopulationResponse>
                 data={population_data}
                 show_counts={props.show_counts}
                 loading={*loading}
