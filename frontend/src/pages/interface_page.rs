@@ -121,7 +121,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             <div class="form-wrapper">
                 <form onsubmit={submit}>
                     <div onmouseleave={&toggle_charts(false)}>
-                        <button class="button" onclick={&toggle_charts(true)} >{"charts"}</button>
+                        <button type="button" class="button" onclick={&toggle_charts(true)} >{"charts"}</button>
                         <div class="chart-dropdown" style={if *show_charts {"display: block"} else {"display: none"}} >
                             <div>
                                 <label for="show_party"> {"party"}</label>

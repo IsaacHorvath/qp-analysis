@@ -46,20 +46,22 @@ impl BreakdownEngine {
 }
 
 impl Plottable<BreakdownResponse> for BreakdownEngine {
-    fn new(breakdown_type: BreakdownType, window_width: f64, show_counts: bool) -> Self {
+    fn new(breakdown_type: BreakdownType) -> Self {
         BreakdownEngine {
             breakdown_type: breakdown_type.clone(),
             data: Rc::from(vec![]),
-            window_width,
+            window_width: 0.0,
             dpr: 1.0,
-            show_counts,
+            show_counts: false,
             hover_id: 0,
             coord_mappings: vec![],
             get_speeches: None,
         }
     }
     
-    fn set_speech_callback(&mut self, get_speeches: Callback<OverlaySelection>) {
+    fn set_props(&mut self, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) {
+        self.window_width = window_width;
+        self.show_counts = show_counts;
         self.get_speeches = Some(get_speeches);
     }
     

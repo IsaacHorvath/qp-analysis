@@ -12,8 +12,8 @@ use yew_hooks::prelude::use_window_size;
 pub trait Plottable<R>
     where R: PartialEq + std::fmt::Debug + 'static
 {
-    fn new(breakdown_type: BreakdownType, window_width: f64, show_counts: bool) -> Self;
-    fn set_speech_callback(&mut self, get_speeches: Callback<OverlaySelection>);
+    fn new(breakdown_type: BreakdownType) -> Self;
+    fn set_props(&mut self, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>);
     fn load_data(&mut self, data: Rc<Vec<R>>);
     fn is_empty(&self) -> bool;
     fn get_width(&self) -> u32;
@@ -62,8 +62,8 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     let canvas = use_node_ref();
     let inter_canvas = use_node_ref();
     let window_width = use_window_size();
-    let engine: Rc<RefCell<P>> = use_mut_ref(|| Plottable::new(props.breakdown_type.clone(), window_width.0, props.show_counts));
-    engine.borrow_mut().set_speech_callback(props.get_speeches.clone());
+    let engine: Rc<RefCell<P>> = use_mut_ref(|| Plottable::new(props.breakdown_type.clone()));
+    engine.borrow_mut().set_props(window_width.0, props.show_counts, props.get_speeches.clone());
     
     {
         let engine = engine.clone();

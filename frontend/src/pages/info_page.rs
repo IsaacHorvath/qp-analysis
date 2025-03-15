@@ -16,6 +16,7 @@ use std::rc::Rc;
 pub fn info_page() -> Html {
     let speakers = use_state(|| None);
     
+    let show_charts = use_state(|| false);
     let loading = use_state(|| false);
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
@@ -65,6 +66,14 @@ pub fn info_page() -> Html {
     };
     
     let speech_data = speech_data();
+    
+    let toggle_charts = |toggle| {
+        let show_charts = show_charts.clone();
+        Callback::from(move |_| {
+            if toggle {show_charts.set(!*show_charts);}
+            else {show_charts.set(false);}
+        })
+    };
             
     html! {
         <div class="info">
@@ -125,28 +134,30 @@ pub fn info_page() -> Html {
 
             <h2>{"More Charts"}</h2>
 
-            <p>{"There are a few other charts included that you can add to the view by clicking the checkboxes that look like this in the interface:"}</p>
-            <div class="vis">
-                    // todo use small component
-                <div>
-                    <label for="show_party"> {"party"}</label>
-                    <input type="checkbox" id="show_party" />
-                </div>
-                <div>
-                    <label for="show_gender"> {"gender"}</label>
-                    <input type="checkbox" id="show_gender" />
-                </div>
-                <div>
-                    <label for="show_province"> {"province"}</label>
-                    <input type="checkbox" id="show_province" />
-                </div>
-                <div>
-                    <label for="show_speaker"> {"speaker"}</label>
-                    <input type="checkbox" id="show_speaker" />
-                </div>
-                <div class="centered-box">
-                    <label for="show_pop"> {"pop density"}</label>
-                    <input type="checkbox" id="show_pop" />
+            <p>{"There are a few other charts included that you can add to the view by clicking the button that looks like this in the interface:"}</p>
+            <div onmouseleave={&toggle_charts(false)}>
+                <button class="button" onclick={&toggle_charts(true)} >{"charts"}</button>
+                <div class="chart-dropdown" style={if *show_charts {"display: block"} else {"display: none"}} >
+                    <div>
+                        <label for="show_party"> {"party"}</label>
+                        <input type="checkbox" id="show_party"/>
+                    </div>
+                    <div>
+                        <label for="show_gender"> {"gender"}</label>
+                        <input type="checkbox" id="show_gender"/>
+                    </div>
+                    <div>
+                        <label for="show_province"> {"province"}</label>
+                        <input type="checkbox" id="show_province"/>
+                    </div>
+                    <div>
+                        <label for="show_speaker"> {"speaker"}</label>
+                        <input type="checkbox" id="show_speaker"/>
+                    </div>
+                    <div>
+                        <label for="show_pop"> {"pop density"}</label>
+                        <input type="checkbox" id="show_pop"/>
+                    </div>
                 </div>
             </div>
             <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
