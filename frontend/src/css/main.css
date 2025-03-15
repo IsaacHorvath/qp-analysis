@@ -21,6 +21,11 @@
     padding-inline: 5px;
 }
 
+.button:hover {
+    background-color: #676767;
+    color: #fee17d;
+}
+
 
 /* interface */
 .interface {
@@ -40,31 +45,35 @@
     background-color: #282828;
     border-radius: 5px;
     margin-bottom: 1em;
+    padding: 0.25em 1vw;
 }
 
 .interface form > div {
     align-self: stretch;
-    padding: 0.5em 1em;
+    padding: 0.25em 1vw;
     /*background-color: #282828;*/
-}
-
-.vis {
-    display: grid;
-    text-align: right;
-    grid-template-rows: 1fr 1fr;
-    grid-auto-flow: column;
-    column-gap: 1em;
-    color: #ffeba9;
-}
-
-.centered-box {
-    grid-row: 1 / span 2;
-    align-content: center;
 }
 
 .form-section {
     display: flex;
     align-items: center;
+}
+
+.chart-dropdown {
+    display: none;
+    position: absolute;
+    background-color: #282828;
+    border: 2px solid #fee17d;
+    border-radius: 10px;
+    min-width: max-content;
+    z-index: 15;
+}
+
+.chart-dropdown > div {
+    padding: 0.1em 0.7em 0.3em 0.7em;
+    text-decoration: none;
+    text-align: center;
+    display: block;
 }
 
 .word {

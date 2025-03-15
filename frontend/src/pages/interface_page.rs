@@ -18,6 +18,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     let speakers = use_state(|| None);
     let loading = use_state(|| false);
     
+    let show_charts = use_state(|| false);
     let show_party = use_state(|| true);
     let show_gender = use_state(|| false);
     let show_province = use_state(|| false);
@@ -107,36 +108,46 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
         })
     };
     
+    let toggle_charts = |toggle| {
+        let show_charts = show_charts.clone();
+        Callback::from(move |_| {
+            if toggle {show_charts.set(!*show_charts);}
+            else {show_charts.set(false);}
+        })
+    };
+    
     html! {
         <div class="interface">
             <div class="form-wrapper">
                 <form onsubmit={submit}>
-                    <div class="vis">
-                            // todo make small component
-                        <div>
-                            <label for="show_party"> {"party"}</label>
-                            <input type="checkbox" id="show_party" onclick={on_party} checked={*show_party}/>
-                        </div>
-                        <div>
-                            <label for="show_gender"> {"gender"}</label>
-                            <input type="checkbox" id="show_gender" onclick={on_gender} />
-                        </div>
-                        if !props.provincial {
+                    <div onmouseleave={&toggle_charts(false)}>
+                        <button class="button" onclick={&toggle_charts(true)} >{"charts"}</button>
+                        <div class="chart-dropdown" style={if *show_charts {"display: block"} else {"display: none"}} >
                             <div>
-                                <label for="show_province"> {"province"}</label>
-                                <input type="checkbox" id="show_province" onclick={on_province} />
+                                <label for="show_party"> {"party"}</label>
+                                <input type="checkbox" id="show_party" onclick={on_party} checked={*show_party}/>
                             </div>
-                        }
-                        <div class={if props.provincial {"centered-box"} else {""}} >
-                            <label for="show_speaker"> {"speaker"}</label>
-                            <input type="checkbox" id="show_speaker" onclick={on_speaker} />
+                            <div>
+                                <label for="show_gender"> {"gender"}</label>
+                                <input type="checkbox" id="show_gender" onclick={on_gender} />
+                            </div>
+                            if !props.provincial {
+                                <div>
+                                    <label for="show_province"> {"province"}</label>
+                                    <input type="checkbox" id="show_province" onclick={on_province} />
+                                </div>
+                            }
+                            <div>
+                                <label for="show_speaker"> {"speaker"}</label>
+                                <input type="checkbox" id="show_speaker" onclick={on_speaker} />
+                            </div>
+                            if !props.provincial {
+                                <div>
+                                    <label for="show_pop"> {"pop density"}</label>
+                                    <input type="checkbox" id="show_pop" onclick={on_pop} />
+                                </div>
+                            }
                         </div>
-                        if !props.provincial {
-                            <div class="centered-box">
-                                <label for="show_pop"> {"pop density"}</label>
-                                <input type="checkbox" id="show_pop" onclick={on_pop} />
-                            </div>
-                        }
                     </div>
                     <div class="form-section">
                         <label for="word_input"> {"search term:"}</label>

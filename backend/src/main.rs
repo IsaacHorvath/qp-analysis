@@ -14,12 +14,12 @@ use std::path::PathBuf;
 use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
-use crate::dummy_db::*;
+use crate::db::*;
 use crate::error::AppError;
 use common::models::*;
 
 mod error;
-mod dummy_db;
+mod db;
 // todo use clap for dev dummy db
 
 #[derive(Parser, Debug)]
