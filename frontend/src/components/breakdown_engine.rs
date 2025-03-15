@@ -29,7 +29,7 @@ pub struct BreakdownEngine {
     show_counts: bool,
     hover_id: i32,
     coord_mappings: Vec<CoordMapping>,
-    get_speeches: Callback<OverlaySelection>,
+    get_speeches: Option<Callback<OverlaySelection>>,
 }
 
 impl BreakdownEngine {
@@ -46,18 +46,23 @@ impl BreakdownEngine {
 }
 
 impl Plottable<BreakdownResponse> for BreakdownEngine {
-    fn new(data: Rc<Vec<BreakdownResponse>>, breakdown_type: BreakdownType, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self {
+    fn new(breakdown_type: BreakdownType, window_width: f64, show_counts: bool) -> Self {
         BreakdownEngine {
             breakdown_type: breakdown_type.clone(),
-            data,
+            data: Rc::from(vec![]),
             window_width,
             dpr: 1.0,
             show_counts,
             hover_id: 0,
             coord_mappings: vec![],
-            get_speeches,
+            get_speeches: None,
         }
     }
+    
+    fn set_speech_callback(&mut self, get_speeches: Callback<OverlaySelection>) {
+        self.get_speeches = Some(get_speeches);
+    }
+    
     fn load_data(&mut self, data: Rc<Vec<BreakdownResponse>>) {
         self.data = data;
     }
@@ -78,7 +83,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
     }
     
     fn get_height(&self) -> u32 {
-        400
+        500
     }
     
     fn get_heading(&self) -> String {
@@ -202,11 +207,12 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
     }
     
     fn clicked(&self, e: MouseEvent) {
-        let cm = self.mouse_mapping(e);
-        
-        if cm.id > 0 {
-            let heading = self.data.as_ref().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
-            self.get_speeches.emit(OverlaySelection {breakdown_type: self.breakdown_type.clone(), id: cm.id, heading});
+        if let Some(get_speeches) = &self.get_speeches {
+            let cm = self.mouse_mapping(e);
+            if cm.id > 0 {
+                let heading = self.data.as_ref().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                get_speeches.emit(OverlaySelection {breakdown_type: self.breakdown_type.clone(), id: cm.id, heading});
+            }
         }
     }
 }

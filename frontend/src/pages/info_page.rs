@@ -1,12 +1,11 @@
 use yew::prelude::*;
-use yew_hooks::prelude::use_window_size;
 use common::models::{Speaker, BreakdownType, SpeakerResponse, BreakdownResponse, PopulationResponse};
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
-use crate::components::plot::Plot;
-use crate::components::breakdown_plot_engine::BreakdownEngine;
-use crate::components::population_plot_engine::PopulationEngine;
+use crate::components::plot::{Plot, PlotSource};
+use crate::components::breakdown_engine::BreakdownEngine;
+use crate::components::population_engine::PopulationEngine;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::info_page_data::*;
@@ -21,8 +20,6 @@ pub fn info_page() -> Html {
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
     let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
-    
-    let window_size = use_window_size();
 
     {
         let speakers = speakers.clone();
@@ -79,10 +76,10 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Party}
-                    data={Some(Ok(Rc::from(pipeline_party_data())))}
+                    source={PlotSource::Json(pipeline_party_data())}
+                    visible={true}
+                    word={""}
                     show_counts={false}
-                    loading={false}
-                    window_width={window_size.0} 
                     get_speeches={get_speeches("pipeline".to_owned())}
                 />
             </div>
@@ -92,10 +89,10 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Party}
-                    data={Some(Ok(Rc::from(pipeline_party_data())))}
+                    source={PlotSource::Json(pipeline_party_data())}
+                    visible={true}
+                    word={""}
                     show_counts={true}
-                    loading={false}
-                    window_width={window_size.0} 
                     get_speeches={get_speeches("pipeline".to_owned())}
                 />
             </div>
@@ -156,10 +153,10 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Gender}
-                    data={Some(Ok(Rc::from(mental_gender_data())))}
+                    source={PlotSource::Json(mental_gender_data())}
+                    visible={true}
+                    word={""}
                     show_counts={true}
-                    loading={false}
-                    window_width={window_size.0} 
                     get_speeches={get_speeches("mental health".to_owned())}
                 />
             </div>
@@ -169,10 +166,10 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Province}
-                    data={Some(Ok(Rc::from(trump_province_data())))}
+                    source={PlotSource::Json(trump_province_data())}
+                    visible={true}
+                    word={""}
                     show_counts={false}
-                    loading={false}
-                    window_width={window_size.0} 
                     get_speeches={get_speeches("trump".to_owned())}
                 />
             </div>
@@ -182,10 +179,10 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Speaker}
-                    data={Some(Ok(Rc::from(pharma_speaker_data())))}
+                    source={PlotSource::Json(pharma_speaker_data())}
+                    visible={true}
+                    word={""}
                     show_counts={true}
-                    loading={false}
-                    window_width={window_size.0} 
                     get_speeches={get_speeches("pharmacare".to_owned())}
                 />
             </div>
@@ -197,11 +194,11 @@ pub fn info_page() -> Html {
             <div class="info-chart">
                 <Plot<PopulationEngine, PopulationResponse>
                     breakdown_type={BreakdownType::Speaker}
-                    data={Some(Ok(Rc::from(gaza_pop_data())))}
+                    source={PlotSource::Json(gaza_pop_data())}
+                    visible={true}
+                    word={""}
                     show_counts={false}
-                    loading={false}
-                    window_width={window_size.0} 
-                    get_speeches={get_speeches("pipeline".to_owned())}
+                    get_speeches={get_speeches("gaza".to_owned())}
                 />
             </div>
             <p>{"Note that almost all of the people who have actually spoken about Gaza in the house come from urban ridings. Of the few exceptions, way at the left side of the graph, none are Conservative. Each of these dots can be clicked to bring up the speeches made by the MP in that riding."}</p>

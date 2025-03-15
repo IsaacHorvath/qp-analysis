@@ -1,11 +1,12 @@
-use common::models::{BreakdownType, SpeakerResponse, Speaker};
+use common::models::{BreakdownType, BreakdownResponse, PopulationResponse, SpeakerResponse, Speaker};
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
-use crate::components::breakdown::Breakdown;
-use crate::components::population::Population;
+use crate::components::plot::{Plot, PlotSource};
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
+use crate::components::population_engine::PopulationEngine;
+use crate::components::breakdown_engine::BreakdownEngine;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -13,6 +14,7 @@ use std::rc::Rc;
 pub struct InterfacePageProps {
   pub provincial: bool,
 }
+
 #[function_component(InterfacePage)]
 pub fn interface_page(props: &InterfacePageProps) -> Html {
     let speakers = use_state(|| None);
@@ -53,66 +55,26 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
         });
     }
     
-    // todo refactor into one function
-    let on_party = {
-        let show_party = show_party.clone();
+    fn build_on(state: UseStateHandle<bool>) -> Callback<MouseEvent> {
         Callback::from(move |e : MouseEvent| {
             if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_party.set(input.checked());
+                state.set(input.checked());
             }
         })
-    };
+    }
     
-    let on_gender = {
-        let show_gender = show_gender.clone();
-        Callback::from(move |e : MouseEvent| {
-            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_gender.set(input.checked());
-            }
-        })
-    };
-    
-    let on_province = {
-        let show_province = show_province.clone();
-        Callback::from(move |e : MouseEvent| {
-            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_province.set(input.checked());
-            }
-        })
-    };
-    
-    let on_speaker = {
-        let show_speaker = show_speaker.clone();
-        Callback::from(move |e : MouseEvent| {
-            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_speaker.set(input.checked());
-            }
-        })
-    };
-    
-    let on_pop = {
-        let show_pop = show_pop.clone();
-        Callback::from(move |e : MouseEvent| {
-            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_pop.set(input.checked());
-            }
-        })
-    };
+    let on_party = build_on(show_party.clone());
+    let on_gender = build_on(show_gender.clone());
+    let on_province = build_on(show_province.clone());
+    let on_speaker = build_on(show_speaker.clone());
+    let on_pop = build_on(show_pop.clone());
+    let on_show_counts = build_on(show_counts.clone());
     
     let on_input = {
         let input_value = input_value.clone();
         Callback::from(move |e : Event| {
             if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
                 input_value.set(input.value());
-            }
-        })
-    };
-    
-    let on_show_counts = {
-        let show_counts = show_counts.clone();
-        Callback::from(move |e : MouseEvent| {
-            if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
-                show_counts.set(input.checked());
             }
         })
     };
@@ -193,14 +155,49 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             </div>
             
             <div class="charts">
-                <Breakdown breakdown_type={BreakdownType::Party} visible={*show_party} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
-                <Breakdown breakdown_type={BreakdownType::Gender} visible={*show_gender} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Plot<BreakdownEngine, BreakdownResponse>
+                    breakdown_type={BreakdownType::Party}
+                    source={PlotSource::Uri("breakdown/party".to_string())}
+                    visible={*show_party}
+                    word={(*word).clone()}
+                    show_counts={*show_counts}
+                    get_speeches={&get_speeches}
+                />
+                <Plot<BreakdownEngine, BreakdownResponse>
+                    breakdown_type={BreakdownType::Gender}
+                    source={PlotSource::Uri("breakdown/gender".to_string())}
+                    visible={*show_gender}
+                    word={(*word).clone()}
+                    show_counts={*show_counts}
+                    get_speeches={&get_speeches}
+                />
                 if !props.provincial {
-                    <Breakdown breakdown_type={BreakdownType::Province} visible={*show_province} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                    <Plot<BreakdownEngine, BreakdownResponse>
+                        breakdown_type={BreakdownType::Province}
+                        source={PlotSource::Uri("breakdown/province".to_string())}
+                        visible={*show_province}
+                        word={(*word).clone()}
+                        show_counts={*show_counts}
+                        get_speeches={&get_speeches}
+                    />
                 }
-                <Breakdown breakdown_type={BreakdownType::Speaker} visible={*show_speaker} word={(*word).clone()} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                <Plot<BreakdownEngine, BreakdownResponse>
+                    breakdown_type={BreakdownType::Speaker}
+                    source={PlotSource::Uri("breakdown/speaker".to_string())}
+                    visible={*show_speaker}
+                    word={(*word).clone()}
+                    show_counts={*show_counts}
+                    get_speeches={&get_speeches}
+                />
                 if !props.provincial {
-                    <Population word={(*word).clone()} visible={*show_pop} show_counts={*show_counts} get_speeches={&get_speeches}/>
+                    <Plot<PopulationEngine, PopulationResponse>
+                        breakdown_type={BreakdownType::Speaker}
+                        source={PlotSource::Uri("population".to_string())}
+                        visible={*show_pop}
+                        word={(*word).clone()}
+                        show_counts={*show_counts}
+                        get_speeches={&get_speeches}
+                    />
                 }
             </div>
             

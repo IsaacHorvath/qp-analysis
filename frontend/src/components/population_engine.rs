@@ -6,9 +6,7 @@ use gloo::utils::window;
 use common::models::PopulationResponse;
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{min, max};
-use log::info;
-use crate::components::plot::Plottable;
-use crate::components::plot::canvas_context;
+use crate::components::plot::{Plottable, canvas_context};
 use common::models::BreakdownType;
 use std::rc::Rc;
 
@@ -37,7 +35,7 @@ pub struct PopulationEngine {
     show_counts: bool,
     hover_id: i32,
     coord_mappings: Vec<CoordMapping>,
-    get_speeches: Callback<OverlaySelection>,
+    get_speeches: Option<Callback<OverlaySelection>>,
 }
 
 impl PopulationEngine {
@@ -59,23 +57,28 @@ impl PopulationEngine {
 }
 
 impl Plottable<PopulationResponse> for PopulationEngine {
-    fn new(data: Rc<Vec<PopulationResponse>>, _breakdown_type: BreakdownType, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self {
+    fn new(_breakdown_type: BreakdownType, window_width: f64, show_counts: bool) -> Self {
         PopulationEngine {
-            data,
+            data: Rc::from(vec![]),
             window_width,
             dpr: 1.0,
-            show_counts,
             hover_id: 0,
+            show_counts,
             coord_mappings: vec![],
-            get_speeches,
+            get_speeches: None,
         }
     }
+    
+    fn set_speech_callback(&mut self, get_speeches: Callback<OverlaySelection>) {
+        self.get_speeches = Some(get_speeches);
+    }
+    
     fn load_data(&mut self, data: Rc<Vec<PopulationResponse>>) {
         self.data = data;
     }
     
     fn is_empty(&self) -> bool {
-        self.data.as_ref().iter().filter(|d| d.count > 0).count() == 0
+        self.data.iter().filter(|d| d.count > 0).count() == 0
     }
     
     fn get_width(&self) -> u32 {
@@ -83,7 +86,7 @@ impl Plottable<PopulationResponse> for PopulationEngine {
     }
     
     fn get_height(&self) -> u32 {
-        400
+        500
     }
     
     fn get_heading(&self) -> String {
@@ -200,7 +203,6 @@ impl Plottable<PopulationResponse> for PopulationEngine {
                 context.stroke();
                 
                 context.set_line_width(0.5);
-                info!("{}px sans-serif", (12.0 * self.dpr) as i32);
                 context.set_font(&format!("{}px sans-serif", (12.0 * self.dpr) as i32));
                 let ts = context.measure_text(&cm.name).unwrap();
                 let h = ts.font_bounding_box_ascent() + 2.0;
@@ -213,11 +215,12 @@ impl Plottable<PopulationResponse> for PopulationEngine {
     }
     
     fn clicked(&self, e: MouseEvent) {
-        let cm = self.mouse_mapping(e);
-        
-        if cm.id > 0 {
-            let heading = self.data.as_ref().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
-            self.get_speeches.emit(OverlaySelection {breakdown_type: BreakdownType::Speaker, id: cm.id, heading});
+        if let Some(get_speeches) = &self.get_speeches {
+            let cm = self.mouse_mapping(e);
+            if cm.id > 0 {
+                let heading = self.data.as_ref().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                get_speeches.emit(OverlaySelection {breakdown_type: BreakdownType::Speaker, id: cm.id, heading});
+            }
         }
     }
 }
