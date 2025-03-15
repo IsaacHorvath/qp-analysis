@@ -1,11 +1,12 @@
 use common::models::*;
-use crate::components::breakdown_plot::BreakdownPlot;
+use crate::components::plot::Plot;
+use crate::components::breakdown_plot_engine::BreakdownEngine;
 use crate::components::speech_overlay::OverlaySelection;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
-//use log::info;
+use std::rc::Rc;
 
 #[derive(Properties, PartialEq)]
 pub struct BreakdownProps {
@@ -55,17 +56,17 @@ pub fn breakdown(props: &BreakdownProps) -> Html {
         });
     }
 
-    let mut breakdown_data: Option<Result<Vec<BreakdownResponse>, String>> = None;
+    let mut breakdown_data: Option<Result<Rc<Vec<BreakdownResponse>>, String>> = None;
     if let Some(res) = data.as_ref() {
         breakdown_data = match res {
-            Ok(data) => Some(Ok(serde_json::from_str::<Vec<BreakdownResponse>>(data).unwrap())),
+            Ok(data) => Some(Ok(Rc::from(serde_json::from_str::<Vec<BreakdownResponse>>(data).unwrap()))),
             Err(err) => Some(Err(err.to_string())),
         };
     }
     
     html! {
         if props.visible {
-            <BreakdownPlot
+            <Plot<BreakdownEngine, BreakdownResponse>
                 breakdown_type={props.breakdown_type.clone()}
                 data={breakdown_data}
                 show_counts={props.show_counts}

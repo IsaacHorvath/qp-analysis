@@ -1,11 +1,12 @@
 use yew::prelude::*;
 use yew_hooks::prelude::use_window_size;
-use common::models::{Speaker, BreakdownType, SpeakerResponse};
+use common::models::{Speaker, BreakdownType, SpeakerResponse, BreakdownResponse, PopulationResponse};
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
-use crate::components::breakdown_plot::BreakdownPlot;
-use crate::components::population_plot::PopulationPlot;
+use crate::components::plot::Plot;
+use crate::components::breakdown_plot_engine::BreakdownEngine;
+use crate::components::population_plot_engine::PopulationEngine;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::info_page_data::*;
@@ -76,9 +77,9 @@ pub fn info_page() -> Html {
             
             <p>{"To use the search interface, type in a word or phrase into the box labeled \"search term\" and hit the submit button. For example, here's what will pop up with the default settings if you enter \"pipeline\":"}</p>
             <div class="info-chart">
-                <BreakdownPlot
+                <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Party}
-                    data={Some(Ok(pipeline_party_data()))}
+                    data={Some(Ok(Rc::from(pipeline_party_data())))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 
@@ -89,9 +90,9 @@ pub fn info_page() -> Html {
 
             <p>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to their 120 seats, as well as the extra speaking time they get as the official opposition. If you're wondering where I got that 650 number, you can check \"total counts\" to the right of the search box and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
             <div class="info-chart">
-                <BreakdownPlot
+                <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Party}
-                    data={Some(Ok(pipeline_party_data()))}
+                    data={Some(Ok(Rc::from(pipeline_party_data())))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 
@@ -153,9 +154,9 @@ pub fn info_page() -> Html {
             </div>
             <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
             <div class="info-chart">
-                <BreakdownPlot
+                <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Gender}
-                    data={Some(Ok(mental_gender_data()))}
+                    data={Some(Ok(Rc::from(mental_gender_data())))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 
@@ -166,9 +167,9 @@ pub fn info_page() -> Html {
 
             <p>{"The breakdown by province is fairly self-explanatory. Here's what it looks like when you search \"trump\":"}</p>
             <div class="info-chart">
-                <BreakdownPlot
+                <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Province}
-                    data={Some(Ok(trump_province_data()))}
+                    data={Some(Ok(Rc::from(trump_province_data())))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 
@@ -179,9 +180,9 @@ pub fn info_page() -> Html {
 
             <p>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and looks like this with the example search \"pharmacare\":"}</p>
             <div class="info-chart">
-                <BreakdownPlot
+                <Plot<BreakdownEngine, BreakdownResponse>
                     breakdown_type={BreakdownType::Speaker}
-                    data={Some(Ok(pharma_speaker_data()))}
+                    data={Some(Ok(Rc::from(pharma_speaker_data())))}
                     show_counts={true}
                     loading={false}
                     window_width={window_size.0} 
@@ -194,8 +195,9 @@ pub fn info_page() -> Html {
             
             <p>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
             <div class="info-chart">
-                <PopulationPlot
-                    data={Some(Ok(gaza_pop_data()))}
+                <Plot<PopulationEngine, PopulationResponse>
+                    breakdown_type={BreakdownType::Speaker}
+                    data={Some(Ok(Rc::from(gaza_pop_data())))}
                     show_counts={false}
                     loading={false}
                     window_width={window_size.0} 

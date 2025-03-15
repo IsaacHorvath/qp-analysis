@@ -31,13 +31,13 @@ struct PopDensity {
 }
 
 pub struct PopulationEngine {
-    pub data: Rc<Vec<PopulationResponse>>,
-    pub window_width: f64,
-    pub dpr: f64,
-    pub show_counts: bool,
-    pub hover_id: i32,
-    pub coord_mappings: Vec<CoordMapping>,
-    pub get_speeches: Callback<OverlaySelection>,
+    data: Rc<Vec<PopulationResponse>>,
+    window_width: f64,
+    dpr: f64,
+    show_counts: bool,
+    hover_id: i32,
+    coord_mappings: Vec<CoordMapping>,
+    get_speeches: Callback<OverlaySelection>,
 }
 
 impl PopulationEngine {
@@ -59,9 +59,9 @@ impl PopulationEngine {
 }
 
 impl Plottable<PopulationResponse> for PopulationEngine {
-    fn new(window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self {
+    fn new(data: Rc<Vec<PopulationResponse>>, _breakdown_type: BreakdownType, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self {
         PopulationEngine {
-            data: Rc::from(vec![]),
+            data,
             window_width,
             dpr: 1.0,
             show_counts,

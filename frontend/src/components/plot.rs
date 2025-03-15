@@ -1,3 +1,4 @@
+use common::models::BreakdownType;
 use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use wasm_bindgen::JsCast;
@@ -13,7 +14,7 @@ pub enum PlotMsg {
 pub trait Plottable<R>
     where R: PartialEq + std::fmt::Debug + 'static
 {
-    fn new(window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self;
+    fn new(data: Rc<Vec<R>>, breakdown_type: BreakdownType, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) -> Self;
     fn load_data(&mut self, data: Rc<Vec<R>>);
     fn is_empty(&self) -> bool;
     fn get_width(&self) -> u32;
@@ -28,6 +29,7 @@ pub trait Plottable<R>
 pub struct PlotProps<R>
     where R: PartialEq + std::fmt::Debug + 'static
 {
+    pub breakdown_type: BreakdownType,
     pub data: Option<Result<Rc<Vec<R>>, String>>,
     pub loading: bool,
     pub window_width: f64,
@@ -42,7 +44,7 @@ pub struct Plot<P, R>
     engine: P,
     canvas: NodeRef,
     inter_canvas: NodeRef,
-    dummy: Option<R>,
+    _dummy: Option<R>,
 }
 
 pub fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
@@ -57,13 +59,15 @@ impl<P, R> Component for Plot<P, R>
     type Properties = PlotProps<R>;
 
     fn create(ctx: &Context<Self>) -> Self {
+        let data = if let Some(Ok(d)) = &ctx.props().data {d.clone()} else {Rc::from(vec![])};
         ctx.link().send_message(PlotMsg::Redraw);
+        
         let props = ctx.props();
         Plot {
-            engine: Plottable::new(props.window_width, props.show_counts, props.get_speeches.clone()),
+            engine: Plottable::new(data, props.breakdown_type.clone(), props.window_width, props.show_counts, props.get_speeches.clone()),
             canvas: NodeRef::default(),
             inter_canvas: NodeRef::default(),
-            dummy: None,
+            _dummy: None,
         }       
     }
 
@@ -105,18 +109,8 @@ impl<P, R> Component for Plot<P, R>
                 </div>
                 <h2 class="plot-heading">{heading}</h2>
                 <h3 class="plot-message" style={message_style}>{message}</h3>
-                <canvas
-                    class="inter-canvas"
-                    style={inter_canvas_style}
-                    {onclick}
-                    {onmousemove}
-                    ref={self.inter_canvas.clone()}
-                />
-                <canvas
-                    class="canvas"
-                    style={canvas_style}
-                    ref={self.canvas.clone()}
-                />
+                <canvas class="inter-canvas" style={inter_canvas_style} {onclick} {onmousemove} ref={self.inter_canvas.clone()} />
+                <canvas class="canvas" style={canvas_style} ref={self.canvas.clone()} />
             </div>
         )
     }
@@ -138,6 +132,7 @@ impl<P, R> Component for Plot<P, R>
     
     fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         let data = if let Some(Ok(d)) = &ctx.props().data {d.clone()} else {Rc::from(vec![])};
+        //log::info!("changed: {}", data.len());
         self.engine.load_data(data);
         ctx.link().send_message(PlotMsg::Redraw);
         true

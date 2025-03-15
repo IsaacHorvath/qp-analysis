@@ -73,6 +73,7 @@ pub fn population(props: &PopulationProps) -> Html {
     html! {
         if props.visible {
             <Plot<PopulationEngine, PopulationResponse>
+                breakdown_type={BreakdownType::Speaker}
                 data={population_data}
                 show_counts={props.show_counts}
                 loading={*loading}
