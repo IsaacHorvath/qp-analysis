@@ -1,18 +1,16 @@
-use common::models::{BreakdownType, BreakdownResponse, PopulationResponse, SpeakerResponse, Speaker};
+use common::models::{BreakdownType, SpeakerResponse, Speaker};
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
-use crate::components::plot::{Plot, PlotSource};
+use crate::components::charts::Charts;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
-use crate::components::population_engine::PopulationEngine;
-use crate::components::breakdown_engine::BreakdownEngine;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 #[derive(Properties, PartialEq)]
 pub struct InterfacePageProps {
-  pub provincial: bool,
+    pub provincial: bool,
 }
 
 #[function_component(InterfacePage)]
@@ -154,52 +152,17 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                 </form>
             </div>
             
-            <div class="charts">
-                <Plot<BreakdownEngine, BreakdownResponse>
-                    breakdown_type={BreakdownType::Party}
-                    source={PlotSource::Uri("breakdown/party".to_string())}
-                    visible={*show_party}
-                    word={(*word).clone()}
-                    show_counts={*show_counts}
-                    get_speeches={&get_speeches}
-                />
-                <Plot<BreakdownEngine, BreakdownResponse>
-                    breakdown_type={BreakdownType::Gender}
-                    source={PlotSource::Uri("breakdown/gender".to_string())}
-                    visible={*show_gender}
-                    word={(*word).clone()}
-                    show_counts={*show_counts}
-                    get_speeches={&get_speeches}
-                />
-                if !props.provincial {
-                    <Plot<BreakdownEngine, BreakdownResponse>
-                        breakdown_type={BreakdownType::Province}
-                        source={PlotSource::Uri("breakdown/province".to_string())}
-                        visible={*show_province}
-                        word={(*word).clone()}
-                        show_counts={*show_counts}
-                        get_speeches={&get_speeches}
-                    />
-                }
-                <Plot<BreakdownEngine, BreakdownResponse>
-                    breakdown_type={BreakdownType::Speaker}
-                    source={PlotSource::Uri("breakdown/speaker".to_string())}
-                    visible={*show_speaker}
-                    word={(*word).clone()}
-                    show_counts={*show_counts}
-                    get_speeches={&get_speeches}
-                />
-                if !props.provincial {
-                    <Plot<PopulationEngine, PopulationResponse>
-                        breakdown_type={BreakdownType::Speaker}
-                        source={PlotSource::Uri("population".to_string())}
-                        visible={*show_pop}
-                        word={(*word).clone()}
-                        show_counts={*show_counts}
-                        get_speeches={&get_speeches}
-                    />
-                }
-            </div>
+            <Charts
+                provincial={props.provincial}
+                word={(*word).clone()}
+                show_counts={*show_counts}
+                show_party={*show_party}
+                show_gender={*show_gender}
+                show_province={*show_province}
+                show_speaker={*show_speaker}
+                show_pop={*show_pop}
+                get_speeches={&get_speeches}
+            />
             
             if (*selection).id != 0 {
                 if (*loading) == false {
