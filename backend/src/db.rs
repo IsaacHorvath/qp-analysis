@@ -132,14 +132,14 @@ pub async fn get_breakdown_word_count(
     Ok(loaded
         .await?
         .into_iter()
-        .filter(|row| row.3? > 0)
+        .filter(|row| if let Some(c) = row.3 {c > 0} else {false})
         .map(|row| {
             BreakdownResponse {
                 id: row.0,
                 name: row.1,
                 colour: row.2,
-                count: row.3? as i32,
-                score: 100000.0 / (row.4 as f32) * (row.3? as f32), // todo: this should be in sql
+                count: row.3.unwrap() as i32,
+                score: 100000.0 / (row.4 as f32) * (row.3.unwrap() as f32), // todo: this should be in sql
             }
         })
         .collect())
@@ -172,8 +172,8 @@ pub async fn get_population_word_count(
         .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection)
         .await?
         .into_iter()
-        .map(|row| {
-            PopulationResponse {
+        .filter_map(|row| {
+            Some(PopulationResponse {
                 id: row.0,
                 name: row.1,
                 population: row.2,
@@ -181,8 +181,9 @@ pub async fn get_population_word_count(
                 colour: row.4,
                 count: row.5? as i32,
                 score: 100000.0 / (row.6 as f32) * (row.5? as f32), // todo: this should be in sql
-            }
+            })
         })
+        //.filter_map(|row| row)
         .collect())
 }
 
