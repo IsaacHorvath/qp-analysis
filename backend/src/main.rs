@@ -1,5 +1,7 @@
-use diesel::r2d2::ConnectionManager;
-use diesel::r2d2::Pool;
+use diesel_async::{
+    pooled_connection::{bb8::Pool},
+    AsyncMysqlConnection
+};
 use axum::{
     routing::{put, get},
     extract::{Path, State},
@@ -7,7 +9,6 @@ use axum::{
     Json
 };
 use clap::Parser;
-use diesel::MysqlConnection;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::str::FromStr;
 use std::path::PathBuf;
@@ -40,7 +41,7 @@ struct Opt {
 
 #[derive(Clone)]
 struct AppState {
-    connection_pool: Pool<ConnectionManager<MysqlConnection>>,
+    connection_pool: Pool<AsyncMysqlConnection>,
 }
 
 #[tokio::main]
@@ -51,7 +52,7 @@ async fn main() {
         std::env::set_var("RUST_LOG", format!("{},hyper=info,mio=info", opt.log_level))
     }
     
-    let state = AppState { connection_pool: get_connection_pool() };
+    let state = AppState { connection_pool: get_connection_pool().await };
     
     tracing_subscriber::fmt::init();
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
@@ -80,45 +81,36 @@ async fn main() {
     axum::serve(listener, app).await.expect("Unable to start server");
 }
 
-fn connect<T, F>(state: AppState, f: F) -> Result<Json<Vec<T>>, AppError> where F: Fn(&mut MysqlConnection) -> Result<Json<Vec<T>>, AppError> {
-    match state.connection_pool.get() {
-        Ok(mut conn) => f(&mut conn),
-        Err(_) => Err(AppError::ConnectionPoolError),
-    }
-}
-
 async fn speakers(State(state): State<AppState>) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
-    connect(state, |conn| { Ok(Json(get_speakers(conn))) })
+    let mut conn = state.connection_pool.get().await?;
+    Ok(Json(get_speakers(&mut conn).await))
 }
 
 async fn breakdown(State(state): State<AppState>, Path(breakdown_type): Path<String>, Json(payload): Json<DataRequest>) -> Result<Json<Vec<BreakdownResponse>>, AppError> {
-    connect(state, |conn| -> Result<Json<Vec<BreakdownResponse>>, AppError> {
-        let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-        let search = payload.search
-            .to_lowercase()
-            .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
-
-        Ok(Json(get_breakdown_word_count(conn, breakdown_type, &search)))
-    })
+    let mut conn = state.connection_pool.get().await?;
+    let search = payload.search
+        .to_lowercase()
+        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
+    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
+            
+    Ok(Json(get_breakdown_word_count(&mut conn, breakdown_type, &search).await))
 }
 
 async fn population(State(state): State<AppState>, Json(payload): Json<DataRequest>) -> Result<Json<Vec<PopulationResponse>>, AppError> {
-    connect(state, |conn| -> Result<Json<Vec<PopulationResponse>>, AppError> {
-        let search = payload.search
-            .to_lowercase()
-            .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
+    let mut conn = state.connection_pool.get().await?;
+    let search = payload.search
+        .to_lowercase()
+        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
 
-        Ok(Json(get_population_word_count(conn, &search)))
-    })
+    Ok(Json(get_population_word_count(&mut conn, &search).await))
 }
 
 async fn speeches(Path((breakdown_type, id)): Path<(String, i32)>, State(state): State<AppState>, Json(payload): Json<DataRequest>) -> Result<Json<Vec<SpeechResponse>>, AppError> {
-    connect(state, |conn| -> Result<Json<Vec<SpeechResponse>>, AppError> {
-        let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-        let search = payload.search
-            .to_lowercase()
-            .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
+    let mut conn = state.connection_pool.get().await?;
+    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
+    let search = payload.search
+        .to_lowercase()
+        .replace(|c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'), "");
 
-        Ok(Json(get_speeches(conn, breakdown_type, id, &search)))
-    })
+    Ok(Json(get_speeches(&mut conn, breakdown_type, id, &search).await))
 }

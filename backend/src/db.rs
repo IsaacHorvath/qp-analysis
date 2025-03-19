@@ -1,6 +1,9 @@
 use diesel::prelude::*;
 use diesel::dsl::sum;
-use diesel::r2d2::{ConnectionManager, Pool};
+use diesel_async::{
+    pooled_connection::{bb8::Pool, AsyncDieselConnectionManager},
+    AsyncMysqlConnection, RunQueryDsl
+};
 use dotenvy::dotenv;
 use std::env;
 use time::PrimitiveDateTime;
@@ -15,31 +18,33 @@ use db::riding::dsl::{riding, name as riding_name, population, area};
 use db::transcript::dsl::{transcript, link};
 use db::{count_words, concat};
 
-pub fn get_connection_pool() -> Pool<ConnectionManager<MysqlConnection>> {
+pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
     dotenv().ok();
 
     let database_url = format!("{}{}",
         env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
         env::var("DATA_SOURCE").expect("DATA_SOURCE must be set")
     );
-    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
+    let manager = AsyncDieselConnectionManager::<AsyncMysqlConnection>::new(database_url);
     
     Pool::builder()
         .max_size(50) // todo find a sane default number here
         .min_idle(Some(10)) // todo same
         .build(manager)
+        .await
         .expect("Could not build connection pool")
 }
 
-pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
+
+pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Vec<SpeakerResponse> {
     speaker
         .select((
             speaker_id,
             first_name,
             last_name,
         ))
-        
-        .load::<(i32, String, String)>(connection)    
+        .load::<(i32, String, String)>(connection)
+        .await
         .expect(format!("error loading speakers").as_str())
         .into_iter()
         .map(|row| { SpeakerResponse {
@@ -50,7 +55,7 @@ pub fn get_speakers(connection: &mut MysqlConnection) -> Vec<SpeakerResponse> {
         .collect()
 }
 
-pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
+pub async fn get_breakdown_word_count(connection: &mut AsyncMysqlConnection, breakdown_type: BreakdownType, word: &str) -> Vec<BreakdownResponse> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speaker.inner_join(party))
@@ -103,6 +108,7 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
     };
     
     loaded
+        .await
         .expect(format!("error loading {} word count", breakdown_type).as_str())
         .into_iter()
         .filter(|row| row.3.unwrap() > 0)
@@ -116,8 +122,8 @@ pub fn get_breakdown_word_count(connection: &mut MysqlConnection, breakdown_type
         .collect()
 }
 
-pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -> Vec<PopulationResponse> {
-    let loaded = speech
+pub async fn get_population_word_count(connection: &mut AsyncMysqlConnection, word: &str) -> Vec<PopulationResponse> {
+    speech
         .filter(speaker_total_words.gt(0))
         .inner_join(speaker.inner_join(party).inner_join(riding))
         .group_by((speaker_id, riding_name, population, area, party_colour, speaker_total_words))
@@ -130,9 +136,8 @@ pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -
             sum(count_words(text, word)),
             speaker_total_words,
         ))
-        .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection);
-    
-    loaded
+        .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection)
+        .await
         .expect("error loading population density word count")
         .into_iter()
         //.filter(|row| row.3.unwrap() > 0)
@@ -148,7 +153,7 @@ pub fn get_population_word_count(connection: &mut MysqlConnection, word: &str) -
         .collect()
 }
 
-pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownType, id: i32, word: &str) -> Vec<SpeechResponse> {
+pub async fn get_speeches(connection: &mut AsyncMysqlConnection, breakdown_type: BreakdownType, id: i32, word: &str) -> Vec<SpeechResponse> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speech_clean)
@@ -208,6 +213,7 @@ pub fn get_speeches(connection: &mut MysqlConnection, breakdown_type: BreakdownT
     };
     
     loaded
+        .await
         .expect(format!("error loading speeches for {} {}, {}", breakdown_type, id, word).as_str())
         .into_iter()
         .map(|row| { SpeechResponse { // todo: this should be modelled select instead of mapping it
