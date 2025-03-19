@@ -79,7 +79,9 @@ async fn main() {
 
     log::info!("listening on http://{}", sock_addr);
 
-    let listener = tokio::net::TcpListener::bind(&sock_addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&sock_addr)
+        .await
+        .expect("unable to bind listener");
     axum::serve(listener, app)
         .await
         .expect("Unable to start server");
@@ -87,7 +89,7 @@ async fn main() {
 
 async fn speakers(State(state): State<AppState>) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
     let mut conn = state.connection_pool.get().await?;
-    Ok(Json(get_speakers(&mut conn).await))
+    Ok(Json(get_speakers(&mut conn).await?))
 }
 
 async fn breakdown(
@@ -102,7 +104,9 @@ async fn breakdown(
     );
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
 
-    Ok(Json(get_breakdown_word_count(&mut conn, breakdown_type, &search).await))
+    Ok(Json(
+        get_breakdown_word_count(&mut conn, breakdown_type, &search).await?,
+    ))
 }
 
 async fn population(
@@ -115,7 +119,7 @@ async fn population(
         "",
     );
 
-    Ok(Json(get_population_word_count(&mut conn, &search).await))
+    Ok(Json(get_population_word_count(&mut conn, &search).await?))
 }
 
 async fn speeches(
@@ -130,5 +134,7 @@ async fn speeches(
         "",
     );
 
-    Ok(Json(get_speeches(&mut conn, breakdown_type, id, &search).await))
+    Ok(Json(
+        get_speeches(&mut conn, breakdown_type, id, &search).await?,
+    ))
 }

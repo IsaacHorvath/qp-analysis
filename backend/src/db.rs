@@ -1,3 +1,4 @@
+use crate::error::AppError;
 use common::models::*;
 use db::gender::dsl::{
     colour as gender_colour, gender, id as gender_id, name as gender_name,
@@ -47,26 +48,25 @@ pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
         .expect("Could not build connection pool")
 }
 
-pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Vec<SpeakerResponse> {
-    speaker
+pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<SpeakerResponse>, AppError> {
+    Ok(speaker
         .select((speaker_id, first_name, last_name))
         .load::<(i32, String, String)>(connection)
-        .await
-        .expect(format!("error loading speakers").as_str())
+        .await?
         .into_iter()
         .map(|row| SpeakerResponse {
             id: row.0,
             first_name: row.1,
             last_name: row.2,
         })
-        .collect()
+        .collect())
 }
 
 pub async fn get_breakdown_word_count(
     connection: &mut AsyncMysqlConnection,
     breakdown_type: BreakdownType,
     word: &str,
-) -> Vec<BreakdownResponse> {
+) -> Result<Vec<BreakdownResponse>, AppError> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speaker.inner_join(party))
@@ -129,28 +129,27 @@ pub async fn get_breakdown_word_count(
             .load::<(i32, String, String, Option<i64>, i32)>(connection),
     };
 
-    loaded
-        .await
-        .expect(format!("error loading {} word count", breakdown_type).as_str())
+    Ok(loaded
+        .await?
         .into_iter()
-        .filter(|row| row.3.unwrap() > 0)
+        .filter(|row| row.3? > 0)
         .map(|row| {
             BreakdownResponse {
                 id: row.0,
                 name: row.1,
                 colour: row.2,
-                count: row.3.unwrap() as i32,
-                score: 100000.0 / (row.4 as f32) * (row.3.unwrap() as f32), // todo: this should be in sql
+                count: row.3? as i32,
+                score: 100000.0 / (row.4 as f32) * (row.3? as f32), // todo: this should be in sql
             }
         })
-        .collect()
+        .collect())
 }
 
 pub async fn get_population_word_count(
     connection: &mut AsyncMysqlConnection,
     word: &str,
-) -> Vec<PopulationResponse> {
-    speech
+) -> Result<Vec<PopulationResponse>, AppError> {
+    Ok(speech
         .filter(speaker_total_words.gt(0))
         .inner_join(speaker.inner_join(party).inner_join(riding))
         .group_by((
@@ -171,10 +170,8 @@ pub async fn get_population_word_count(
             speaker_total_words,
         ))
         .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection)
-        .await
-        .expect("error loading population density word count")
+        .await?
         .into_iter()
-        //.filter(|row| row.3.unwrap() > 0)
         .map(|row| {
             PopulationResponse {
                 id: row.0,
@@ -182,11 +179,11 @@ pub async fn get_population_word_count(
                 population: row.2,
                 area: row.3,
                 colour: row.4,
-                count: row.5.unwrap() as i32,
-                score: 100000.0 / (row.6 as f32) * (row.5.unwrap() as f32), // todo: this should be in sql
+                count: row.5? as i32,
+                score: 100000.0 / (row.6 as f32) * (row.5? as f32), // todo: this should be in sql
             }
         })
-        .collect()
+        .collect())
 }
 
 pub async fn get_speeches(
@@ -194,7 +191,7 @@ pub async fn get_speeches(
     breakdown_type: BreakdownType,
     id: i32,
     word: &str,
-) -> Vec<SpeechResponse> {
+) -> Result<Vec<SpeechResponse>, AppError> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speech_clean)
@@ -237,15 +234,8 @@ pub async fn get_speeches(
             .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
     };
 
-    loaded
-        .await
-        .expect(
-            format!(
-                "error loading speeches for {} {}, {}",
-                breakdown_type, id, word
-            )
-            .as_str(),
-        )
+    Ok(loaded
+        .await?
         .into_iter()
         .map(|row| {
             SpeechResponse {
@@ -257,5 +247,5 @@ pub async fn get_speeches(
                 end: row.4,
             }
         })
-        .collect()
+        .collect())
 }

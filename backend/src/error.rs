@@ -4,10 +4,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use common::models::BreakdownTypeParseError;
+use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::bb8::RunError;
 
 pub enum AppError {
-    BreakdownError,
+    GenericError,
     ConnectionPoolError,
 }
 
@@ -18,7 +19,7 @@ impl IntoResponse for AppError {
                 StatusCode::SERVICE_UNAVAILABLE,
                 "our servers are very busy - please try again later".to_owned(),
             ),
-            _ => (
+            AppError::GenericError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "something went wrong - please refresh the page and try again".to_owned(),
             ),
@@ -30,7 +31,13 @@ impl IntoResponse for AppError {
 
 impl From<BreakdownTypeParseError> for AppError {
     fn from(_: BreakdownTypeParseError) -> Self {
-        Self::BreakdownError
+        Self::GenericError
+    }
+}
+
+impl From<DieselError> for AppError {
+    fn from(_: DieselError) -> Self {
+        Self::GenericError
     }
 }
 
