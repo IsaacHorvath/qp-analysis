@@ -67,6 +67,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
              <div class="speech-overlay">
                 <div class="speech-overlay-container">
                     <h1 class="speech-overlay-heading">{props.selection.heading.clone()}</h1>
+                    
                     { match (*failed, data.as_ref()) {
                         (false, None) => {
                             html! {
@@ -74,7 +75,10 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                             }
                         },
                         (false, Some(data)) => {
-                            let speech_data: Vec<SpeechResponse> = serde_json::from_str(data).unwrap();
+                            let Ok(speech_data) = serde_json::from_str::<Vec<SpeechResponse>>(data) else {
+                                failed.set(false);
+                                return html! { <div/> }
+                            };
                             
                             speech_data.into_iter().map(|speech| {
                                 let speaker = &(*(props.speakers))[&speech.speaker];

@@ -2,6 +2,7 @@ use yew::prelude::*;
 use time::PrimitiveDateTime;
 use time::macros::format_description;
 use regex::RegexBuilder;
+use crate::error_page;
 //use log::info;
 
 #[derive(Properties, PartialEq)]
@@ -18,8 +19,10 @@ pub struct SpeechBoxProps {
 pub fn speech_box(props: &SpeechBoxProps) -> Html {
     let date_format = format_description!("[weekday repr:long], [month repr:long] [day padding:none], [year]");
     let time_format = format_description!("[hour padding:none repr:12]:[minute] [period case:upper]");
-    let date = props.start.date().format(date_format).unwrap();
-    let time = props.start.time().format(time_format).unwrap() + " - " + &props.end.time().format(time_format).unwrap();
+    let Ok(date) = props.start.date().format(date_format) else { return error_page(); };
+    let Ok(start) = props.start.time().format(time_format) else { return error_page(); };
+    let Ok(end) = props.end.time().format(time_format) else { return error_page(); };
+    let time = start + " - " + &end;
     
     let punc_match = r#"[\.\,\;\:\!\?\'\"”“’‘\(\)\[\]\{\}«»]*"#;
     let mut reg_pattern = String::from("(");
@@ -39,10 +42,10 @@ pub fn speech_box(props: &SpeechBoxProps) -> Html {
     }
     reg_pattern.push(')');
     
-    let re = RegexBuilder::new(&reg_pattern)
+    let Ok(re) = RegexBuilder::new(&reg_pattern)
         .case_insensitive(true)
         .build()
-        .unwrap();
+        else { return error_page() };
         
     let mut inner_html = String::from("<p style=\"color: #aaaaaa; text-align: justify; text-justify: inter-word\">");
     inner_html.push_str(&re.replace_all(&props.text, "$1<strong style=\"color: #f6d32d\">$2</strong>$3"));

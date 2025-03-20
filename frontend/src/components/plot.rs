@@ -51,9 +51,15 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         P: Plottable<R> + 'static,
         R: PartialEq + std::fmt::Debug + for<'a> serde::de::Deserialize<'a> + 'static
 {
-    let data_state: UseStateHandle<Option<Result<Rc<Vec<R>>, String>>> = use_state(||
+    let failed = use_state(|| false);
+    let data_state: UseStateHandle<Option<Rc<Vec<R>>>> = use_state(||
         if let PlotSource::Json(json) = &props.source {
-            Some(Ok(Rc::from(serde_json::from_str::<Vec<R>>(json).unwrap())))
+            if let Ok(data) = serde_json::from_str::<Vec<R>>(json) {
+                Some(Rc::from(data))
+            } else {
+                failed.set(true);
+                None
+            }
         }
         else {None}
     );
@@ -70,6 +76,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let visible = props.visible.clone();
         let data_state = data_state.clone();
         let loading = loading.clone();
+        let failed = failed.clone();
         let word = props.word.clone();
         let source = props.source.clone();
         let canvas = canvas.clone();
@@ -79,22 +86,19 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                 if (*word_state) != word && visible {
                     loading.set(true);
                     word_state.set(word.clone());
+                    let failed = failed.clone();
                     spawn_local(async move {
                         let breakdown_request = DataRequest { search: word };
-                        let resp = Request::put(&format!("api/{}", uri))
+                        let Ok(resp) = Request::put(&format!("api/{}", uri))
                             .header("Content-Type", "application/json")
                             .json(&breakdown_request).expect("couldn't create request body")
-                            .send().await.unwrap();
+                            .send().await else { failed.set(true); return };
                             
-                        let mut result = resp.text().await.map_err(|err| err.to_string());
-                        if !resp.ok() { 
-                            result = match result {Ok(e) => Err(e), e => e};
-                        }
+                        if !resp.ok() { failed.set(true); return }
+                        let Ok(result) = resp.text().await else { failed.set(true); return };
+                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result) else { failed.set(true); return };
                         
-                        data_state.set(Some( match result {
-                            Ok(j) => Ok(Rc::from(serde_json::from_str::<Vec<R>>(&j).unwrap())),
-                            Err(e) => Err(e),
-                        }));
+                        data_state.set(Some(Rc::from(data)));
                         loading.set(false);
                     });
                 }
@@ -103,6 +107,8 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             if !engine.borrow().is_empty() {
                 if let (Some(canvas), Some(inter_canvas)) = (canvas.cast(), inter_canvas.cast()) {
                     engine.borrow_mut().redraw(canvas, inter_canvas);
+                } else {
+                    failed.set(true);
                 }
             }
 
@@ -117,8 +123,15 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     let onmousemove = {
         let engine = engine.clone();
+        let failed = failed.clone();
         let inter_canvas = inter_canvas.clone();
-        Callback::from(move |e : MouseEvent| { engine.borrow_mut().hover(e, inter_canvas.cast().unwrap()); })
+        Callback::from(move |e : MouseEvent| {
+            if let Some(ic) = inter_canvas.cast() {
+                engine.borrow_mut().hover(e, ic);
+            } else {
+                failed.set(true);
+            }
+        })
     };
     
     let mut canvas_style = "display: none".to_string();
@@ -129,11 +142,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     match data_state.as_ref() {
         None => {},
-        Some(Err(e)) => {
-            message = format!("error: {}", e);
-            message_style = "";
-        },
-        Some(Ok(d)) => {
+        Some(d) => {
             engine.borrow_mut().load_data(d.clone());
             if engine.borrow().is_empty() { message_style = "display: initial"; }
             else {
@@ -143,13 +152,20 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                 let canvas_opacity = if *loading {"0.25"} else {"1"};
                 canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
                 inter_canvas_style = format!("width: {}px; height: {}px", width, height);
-                if let Some(canvas) = canvas.clone().cast() {
-                    if let Some(inter_canvas) = inter_canvas.clone().cast() {
-                        engine.borrow_mut().redraw(canvas, inter_canvas);
-                    }    
+                if let (Some(canvas), Some(inter_canvas)) = (canvas.clone().cast(), inter_canvas.clone().cast()) {
+                    engine.borrow_mut().redraw(canvas, inter_canvas);
+                } else {
+                    failed.set(true);
                 }
             }
         }
+    }
+    
+    if *failed {
+        canvas_style = "display: none".to_string();
+        inter_canvas_style = "display: none".to_string();
+        message = "an error occured".to_string();
+        message_style = "display: initial";
     }
     
     let heading = engine.borrow().get_heading();
