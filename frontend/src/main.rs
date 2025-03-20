@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 use components::navbar::*;
+use pages::error_page::error_page;
 use pages::interface_page::InterfacePage;
 use pages::info_page::InfoPage;
 use pages::prov_info_page::ProvInfoPage;
@@ -9,7 +10,12 @@ mod pages;
 mod components;
 
 fn switch(routes: Route) -> Html {
-    let url =web_sys::window().unwrap().document().unwrap().url().unwrap();
+    // what kind of error handling options are there in yew?
+    // eventually this will be a call to the backend anyway so we can be url agnostic
+    let Some(window) = web_sys::window() else {return error_page()};
+    let Some(document) = window.document() else {return error_page()};
+    let Ok(url) = document.url() else {return error_page()};
+    
     let provincial = url.contains("queen") || url.contains("localhost");
     match (routes, provincial) {
         (Route::Home, false) => html! { 
@@ -29,7 +35,7 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(NotFoundPage)]
 fn not_found_page() -> Html {
-    let navigator = use_navigator().unwrap();
+    let Some(navigator) = use_navigator() else {return error_page()};
     let onclick = Callback::from(move |_| navigator.push(&Route::Home));
     html! {
         <div>

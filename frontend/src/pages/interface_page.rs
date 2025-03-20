@@ -5,6 +5,7 @@ use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
+use crate::pages::error_page::error_page;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -17,6 +18,7 @@ pub struct InterfacePageProps {
 pub fn interface_page(props: &InterfacePageProps) -> Html {
     let speakers = use_state(|| None);
     let loading = use_state(|| false);
+    let failed = use_state(|| false);
     
     let show_charts = use_state(|| false);
     let show_party = use_state(|| true);
@@ -34,13 +36,15 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     {
         let speakers = speakers.clone();
         let loading = loading.clone();
+        let failed = failed.clone();
         use_effect(move || {
-            if *speakers == None && *loading == false {
+            if *speakers == None && *loading == false && *failed == false {
                 loading.set(true);
                 spawn_local(async move {
                     let uri = format!("/api/speakers");
-                    let resp = Request::get(&uri).send().await.unwrap();
-                    let speaker_response: Vec<SpeakerResponse> = serde_json::from_str(&resp.text().await.unwrap()).unwrap();
+                    let Ok(resp) = Request::get(&uri).send().await else {failed.set(true); return};
+                    let Ok(resp_text) = &resp.text().await else {failed.set(true); return};
+                    let Ok(speaker_response) = serde_json::from_str::<Vec<SpeakerResponse>>(resp_text) else {failed.set(true); return};
                     speakers.set(Some(Rc::new(speaker_response
                         .into_iter()
                         .map(|s| {(s.id, Speaker {first_name: s.first_name, last_name: s.last_name})})
@@ -163,20 +167,24 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                 </form>
             </div>
             
-            <Charts
-                provincial={props.provincial}
-                word={(*word).clone()}
-                show_counts={*show_counts}
-                show_party={*show_party}
-                show_gender={*show_gender}
-                show_province={*show_province}
-                show_speaker={*show_speaker}
-                show_pop={*show_pop}
-                get_speeches={&get_speeches}
-            />
+            if !*failed {
+                <Charts
+                    provincial={props.provincial}
+                    word={(*word).clone()}
+                    show_counts={*show_counts}
+                    show_party={*show_party}
+                    show_gender={*show_gender}
+                    show_province={*show_province}
+                    show_speaker={*show_speaker}
+                    show_pop={*show_pop}
+                    get_speeches={&get_speeches}
+                />
+            } else {
+                {error_page()}
+            }
             
             if (*selection).id != 0 {
-                if (*loading) == false {
+                if !*loading && !*failed {
                     <SpeechOverlay
                         selection={(*selection).clone()}
                         word={(*speech_overlay_word).clone()}
