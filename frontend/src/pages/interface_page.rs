@@ -120,6 +120,8 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
         })
     };
     
+    let dummy_ref = Rc::new(HashMap::new());
+    
     html! {
         <div class="interface">
             <div class="form-wrapper">
@@ -190,7 +192,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                         word={(*speech_overlay_word).clone()}
                         visible={*speech_overlay_visible}
                         hide={hide_speech_overlay}
-                        speakers={Rc::clone((*speakers).as_ref().unwrap())}
+                            speakers={Rc::clone((*speakers).as_ref().unwrap_or_else(|| {failed.set(true); &dummy_ref}))}
                     />
                 }
             }

@@ -1,5 +1,6 @@
 use common::models::{BreakdownType, DataRequest, SpeechResponse, Speaker};
 use crate::components::speech_box::SpeechBox;
+use crate::pages::error_page::error_page;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -26,6 +27,7 @@ pub struct SpeechOverlayProps {
 #[function_component(SpeechOverlay)]
 pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
     let data = use_state(|| None);
+    let failed = use_state(|| false);
     let selection_state = use_state(|| OverlaySelection { breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")} ); // todo use default?
 
     {
@@ -33,6 +35,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
         let selection = props.selection.clone();
         let word = props.word.clone();
         let visible = props.visible;
+        let failed = failed.clone();
         use_effect(move || {
             if visible && (*selection_state) != selection {
                 data.set(None);
@@ -40,21 +43,13 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 spawn_local(async move {
                     let speech_request = DataRequest { search: word };
                     let uri = format!("/api/speeches/{}/{}", selection.breakdown_type, selection.id);
-                    let resp = Request::put(&uri)
+                    let Ok(resp) = Request::put(&uri)
                         .header("Content-Type", "application/json")
                         .json(&speech_request).expect("couldn't create request body")
-                        .send().await.unwrap();
-                    let result = {
-                        if !resp.ok() {
-                            Err(format!(
-                                "error fetching speech data {} ({})",
-                                resp.status(),
-                                resp.status_text()
-                            ))
-                        } else {
-                            resp.text().await.map_err(|err| err.to_string())
-                        }
-                    };
+                        .send().await else { failed.set(true); return };
+                        
+                    if !resp.ok() { failed.set(true); return }
+                    let Ok(result) = resp.text().await else { failed.set(true); return };
                     data.set(Some(result));
                 });
             }
@@ -72,13 +67,13 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
              <div class="speech-overlay">
                 <div class="speech-overlay-container">
                     <h1 class="speech-overlay-heading">{props.selection.heading.clone()}</h1>
-                    { match data.as_ref() {
-                        None => {
+                    { match (*failed, data.as_ref()) {
+                        (false, None) => {
                             html! {
                                 <div class="loader-speech" />
                             }
-                        }
-                        Some(Ok(data)) => {
+                        },
+                        (false, Some(data)) => {
                             let speech_data: Vec<SpeechResponse> = serde_json::from_str(data).unwrap();
                             
                             speech_data.into_iter().map(|speech| {
@@ -96,11 +91,9 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                                     />
                                 }
                             }).collect::<Html>()
-                        }
-                        Some(Err(err)) => {
-                            html! {
-                                <div>{"error requesting data from server: "}{err}</div>
-                            }
+                        },
+                        (true, _) => {
+                            error_page()
                         }
                     } }
                     
