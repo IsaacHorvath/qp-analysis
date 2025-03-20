@@ -8,6 +8,23 @@ use crate::components::speech_overlay::OverlaySelection;
 use std::rc::Rc;
 use std::cell::RefCell;
 use yew_hooks::prelude::use_window_size;
+use std::error::Error;
+
+pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
+    canvas
+        .get_context("2d")
+        .ok()??
+        .dyn_into::<CanvasRenderingContext2d>()
+        .ok()
+}
+
+pub struct PlotError;
+
+impl<E: Error> From<E> for PlotError {
+    fn from(_: E) -> Self {
+        PlotError
+    }
+}
 
 pub trait Plottable<R>
     where R: PartialEq + std::fmt::Debug + 'static
@@ -19,13 +36,9 @@ pub trait Plottable<R>
     fn get_width(&self) -> u32;
     fn get_height(&self) -> u32;
     fn get_heading(&self) -> String;
-    fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement);
-    fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement);
-    fn clicked(&self, e: MouseEvent);
-}
-
-pub fn canvas_context(canvas: &HtmlCanvasElement) -> CanvasRenderingContext2d {
-    canvas.get_context("2d").unwrap().unwrap().dyn_into::<CanvasRenderingContext2d>().unwrap()
+    fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError>;
+    fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError>;
+    fn clicked(&self, e: MouseEvent) -> Result<(), PlotError>;
 }
 
 #[derive(Clone, PartialEq)]
@@ -69,7 +82,14 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     let inter_canvas = use_node_ref();
     let window_width = use_window_size();
     let engine: Rc<RefCell<P>> = use_mut_ref(|| Plottable::new(props.breakdown_type.clone()));
-    engine.borrow_mut().set_props(window_width.0, props.show_counts, props.get_speeches.clone());
+    
+    let heading = if let Ok(mut eng) = engine.try_borrow_mut() {
+        eng.set_props(window_width.0, props.show_counts, props.get_speeches.clone());
+        eng.get_heading()
+    } else {
+        failed.set(true);
+        "".to_string()
+    };
     
     {
         let engine = engine.clone();
@@ -82,6 +102,14 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let canvas = canvas.clone();
         let inter_canvas = inter_canvas.clone();
         use_effect(move || {
+            || -> Result<(), PlotError> {
+                if !engine.try_borrow()?.is_empty() {
+                    engine.try_borrow_mut()?
+                        .redraw(canvas.cast().ok_or(PlotError)?, inter_canvas.cast().ok_or(PlotError)?)?;
+                }
+                Ok(())
+            }().unwrap_or(failed.set(true));
+            
             if let PlotSource::Uri(uri) = source {
                 if (*word_state) != word && visible {
                     loading.set(true);
@@ -103,14 +131,6 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                     });
                 }
             };
-            
-            if !engine.borrow().is_empty() {
-                if let (Some(canvas), Some(inter_canvas)) = (canvas.cast(), inter_canvas.cast()) {
-                    engine.borrow_mut().redraw(canvas, inter_canvas);
-                } else {
-                    failed.set(true);
-                }
-            }
 
             || {}
         });
@@ -118,7 +138,14 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     let onclick = {
         let engine = engine.clone();
-        Callback::from(move |e : MouseEvent| { engine.borrow().clicked(e); })
+        let failed = failed.clone();
+        Callback::from(move |e : MouseEvent| {
+            if let Ok(eng) = engine.try_borrow() {
+                eng.clicked(e).unwrap_or(failed.set(true));
+            } else {
+                failed.set(true)
+            }
+        })
     };
     
     let onmousemove = {
@@ -127,7 +154,11 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let inter_canvas = inter_canvas.clone();
         Callback::from(move |e : MouseEvent| {
             if let Some(ic) = inter_canvas.cast() {
-                engine.borrow_mut().hover(e, ic);
+                if let Ok(mut eng) = engine.try_borrow_mut() {
+                    eng.hover(e, ic).unwrap_or(failed.set(true));
+                } else {
+                    failed.set(true);
+                }
             } else {
                 failed.set(true);
             }
@@ -143,20 +174,24 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     match data_state.as_ref() {
         None => {},
         Some(d) => {
-            engine.borrow_mut().load_data(d.clone());
-            if engine.borrow().is_empty() { message_style = "display: initial"; }
-            else {
-                let width = engine.borrow().get_width();
-                let height = engine.borrow().get_height();
-                
-                let canvas_opacity = if *loading {"0.25"} else {"1"};
-                canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
-                inter_canvas_style = format!("width: {}px; height: {}px", width, height);
-                if let (Some(canvas), Some(inter_canvas)) = (canvas.clone().cast(), inter_canvas.clone().cast()) {
-                    engine.borrow_mut().redraw(canvas, inter_canvas);
-                } else {
-                    failed.set(true);
+            if let Ok(mut eng) = engine.try_borrow_mut() {
+                eng.load_data(d.clone());
+                if eng.is_empty() { message_style = "display: initial"; }
+                else {
+                    let width = eng.get_width();
+                    let height = eng.get_height();
+                    
+                    let canvas_opacity = if *loading {"0.25"} else {"1"};
+                    canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
+                    inter_canvas_style = format!("width: {}px; height: {}px", width, height);
+                    if let (Some(canvas), Some(inter_canvas)) = (canvas.clone().cast(), inter_canvas.clone().cast()) {
+                        eng.redraw(canvas, inter_canvas).unwrap_or(failed.set(true));
+                    } else {
+                        failed.set(true);
+                    }
                 }
+            } else {
+                failed.set(true)
             }
         }
     }
@@ -167,8 +202,6 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         message = "an error occured".to_string();
         message_style = "display: initial";
     }
-    
-    let heading = engine.borrow().get_heading();
         
     html! {
         if props.visible {

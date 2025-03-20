@@ -7,8 +7,7 @@ use gloo::utils::window;
 use common::models::BreakdownResponse;
 use crate::components::speech_overlay::OverlaySelection;
 use std::cmp::{min, max};
-use crate::components::plot::Plottable;
-use crate::components::plot::canvas_context;
+use crate::components::plot::{Plottable, canvas_context, PlotError};
 use common::models::BreakdownType;
 use std::rc::Rc;
 
@@ -92,7 +91,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         format!("{} breakdown", self.breakdown_type)
     }
     
-    fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement) {
+    fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError> {
         self.dpr = window().device_pixel_ratio().max(1.0);
         let canvas_width = (self.dpr * self.get_width() as f64) as u32;
         let canvas_height = (self.dpr * self.get_height() as f64) as u32;
@@ -189,14 +188,15 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
             }))
             .unwrap();
         }
+        Ok(())
     }
     
-    fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement) {
+    fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError> {
         let cm = self.mouse_mapping(e);
         
         if cm.id != self.hover_id {
             self.hover_id = cm.id;
-            let context = canvas_context(&inter_canvas);
+            let context = canvas_context(&inter_canvas).unwrap();
             context.clear_rect(0.0, 0.0, inter_canvas.width() as f64, inter_canvas.height() as f64);
             
             let top = min(cm.top, cm.bottom - 20);
@@ -206,9 +206,10 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
                 context.stroke_rect(cm.left.into(), top.into(), (cm.right - cm.left).into(), (cm.bottom - top).into());
             }
         }
+        Ok(())
     }
     
-    fn clicked(&self, e: MouseEvent) {
+    fn clicked(&self, e: MouseEvent) -> Result<(), PlotError> {
         if let Some(get_speeches) = &self.get_speeches {
             let cm = self.mouse_mapping(e);
             if cm.id > 0 {
@@ -216,5 +217,6 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
                 get_speeches.emit(OverlaySelection {breakdown_type: self.breakdown_type.clone(), id: cm.id, heading});
             }
         }
+        Ok(())
     }
 }
