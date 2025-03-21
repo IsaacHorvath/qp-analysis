@@ -4,6 +4,7 @@ use gloo::utils::window;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::closure::Closure;
 use web_sys::Document;
+use crate::error_page;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -18,7 +19,7 @@ pub enum Route {
 
 #[function_component(Navbar)]
 pub fn navbar() -> Html {
-    let location = use_location().unwrap();
+    let Some(location) = use_location() else { return error_page() };
     let info = location.path() == "/";
     
     let window = window();
@@ -29,11 +30,10 @@ pub fn navbar() -> Html {
         let navbar_class = navbar_class.clone();
         let prev_s = prev_s.clone();
         let scroll = Closure::<dyn FnMut(_)>::new(move |e: web_sys::Event| {
-            let s = e
-                .target().unwrap()
-                .dyn_into::<Document>().unwrap()
-                .scrolling_element().unwrap()
-                .scroll_top();
+            let Some(target) = e.target() else { return; };
+            let Ok(document) = target.dyn_into::<Document>() else { return; };
+            let Some(scrolling_element) = document.scrolling_element() else { return; };
+            let s = scrolling_element.scroll_top();
             
             if s > *prev_s {
                 navbar_class.set("navbar hide".to_string());

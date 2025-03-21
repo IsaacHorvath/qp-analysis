@@ -104,7 +104,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         let mut data = self.data.as_ref().clone();
         data.sort_by(|a, b| {b.score.total_cmp(&a.score)});
 
-        let backend = CanvasBackend::with_canvas_object(canvas).unwrap();
+        let backend = CanvasBackend::with_canvas_object(canvas).ok_or(PlotError)?;
         let drawing_area = backend.into_drawing_area();
         let mut label_size = (self.window_width.sqrt() / 2.5 * self.dpr) as u32;
         
@@ -113,19 +113,19 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         }
         
         let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
-        let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).unwrap(); 
-        let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).unwrap() as f32;
+        let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).ok_or(PlotError)?; 
+        let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).ok_or(PlotError)? as f32;
 
         let mut chart= ChartBuilder::on(&drawing_area)
             .x_label_area_size((40.0 * self.dpr) as u32)
             .y_label_area_size((70.0 * self.dpr) as u32)
             .right_y_label_area_size(if self.show_counts {(60.0 * self.dpr) as u32} else {0})
             .caption(" ", ("sans-serif", (30.0 * self.dpr) as u32, &WHITE))
-            .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max).unwrap()
+            .build_cartesian_2d(x_axis.into_segmented(), 0.0..y_max)?
             .set_secondary_coord(0.0..data.len() as f32, 0.0..c_max);
 
-        let bold_line = hex::decode("97948f").unwrap();
-        let light_line = hex::decode("67635c").unwrap();
+        let bold_line = hex::decode("97948f")?;
+        let light_line = hex::decode("67635c")?;
 
         label_size = max((label_size as f64 * (1.0 + (self.dpr * 0.1))) as u32, (8.0 * self.dpr) as u32);
         let desc_style = TextStyle::from(("sans-serif", (16.0 * self.dpr) as u32).into_font()).color(&WHITE);
@@ -145,8 +145,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
             .axis_desc_style(desc_style.clone())
             .bold_line_style(RGBColor(bold_line[0], bold_line[1], bold_line[2]))
             .light_line_style(RGBColor(light_line[0], light_line[1], light_line[2]))
-            .draw()
-            .unwrap();
+            .draw()?;
         
         if self.show_counts {
             chart
@@ -155,8 +154,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
                 .label_style(TextStyle::from(("sans-serif", label_size).into_font()).color(&WHITE))
                 .axis_desc_style(desc_style)
                 .y_label_formatter(&|v| { format!("{}", *v as u32) })
-                .draw()
-                .unwrap();
+                .draw()?;
         }
         
         self.coord_mappings = vec![];
@@ -176,17 +174,15 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
             let left = i as f32 + if self.show_counts {0.15} else {0.20};
             let right = i as f32 + if self.show_counts {0.49} else {0.80};
             
-            let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-            Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-        }))
-        .unwrap();
+            let rgb = hex::decode(r.colour.clone())?;
+            Ok(Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
+        }).collect::<Result<Vec<Rectangle<(f32, f32)>>, PlotError>>()?)?;
         
         if self.show_counts {
             chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
-                let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-            }))
-            .unwrap();
+                let rgb = hex::decode(r.colour.clone())?;
+                Ok(Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
+            }).collect::<Result<Vec<Rectangle<(f32, f32)>>, PlotError>>()?)?;
         }
         Ok(())
     }
@@ -196,7 +192,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         
         if cm.id != self.hover_id {
             self.hover_id = cm.id;
-            let context = canvas_context(&inter_canvas).unwrap();
+            let context = canvas_context(&inter_canvas).ok_or(PlotError)?;
             context.clear_rect(0.0, 0.0, inter_canvas.width() as f64, inter_canvas.height() as f64);
             
             let top = min(cm.top, cm.bottom - 20);
@@ -213,7 +209,14 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         if let Some(get_speeches) = &self.get_speeches {
             let cm = self.mouse_mapping(e);
             if cm.id > 0 {
-                let heading = self.data.as_ref().iter().filter(|r| r.id == cm.id).next().unwrap().name.clone();
+                let heading = self.data
+                    .as_ref()
+                    .iter()
+                    .filter(|r| r.id == cm.id)
+                    .next()
+                    .ok_or(PlotError)?
+                    .name
+                    .clone();
                 get_speeches.emit(OverlaySelection {breakdown_type: self.breakdown_type.clone(), id: cm.id, heading});
             }
         }

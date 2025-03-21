@@ -145,9 +145,9 @@ impl Plottable<PopulationResponse> for PopulationEngine {
                 .draw()?;
                 
             chart.draw_series(data.iter().map(|r| {
-                let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                Circle::new((r.pop_density, r.score), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-            }))?;
+                let rgb = hex::decode(r.colour.clone())?;
+                Ok(Circle::new((r.pop_density, r.score), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
+            }).collect::<Result<Vec<Circle<(f64, f32), i32>>, PlotError>>()?)?;
             
             for r in data.iter() {
                 let p = chart.backend_coord(&(r.pop_density, r.score));
@@ -172,9 +172,9 @@ impl Plottable<PopulationResponse> for PopulationEngine {
                 .draw()?;
                 
             chart.draw_series(data.iter().map(|r| {
-                let rgb = hex::decode(r.colour.clone()).expect("decoding colour failed");
-                Circle::new((r.pop_density, r.count), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled())
-            }))?;
+                let rgb = hex::decode(r.colour.clone())?;
+                Ok(Circle::new((r.pop_density, r.count), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
+            }).collect::<Result<Vec<Circle<(f64, i32), i32>>, PlotError>>()?)?;
             
             for r in data.iter() {
                 let p = chart.backend_coord(&(r.pop_density, r.count));

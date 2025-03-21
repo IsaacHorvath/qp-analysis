@@ -43,11 +43,12 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 spawn_local(async move {
                     let speech_request = DataRequest { search: word };
                     let uri = format!("/api/speeches/{}/{}", selection.breakdown_type, selection.id);
-                    let Ok(resp) = Request::put(&uri)
+                    let Ok(req) = Request::put(&uri)
                         .header("Content-Type", "application/json")
-                        .json(&speech_request).expect("couldn't create request body")
-                        .send().await else { failed.set(true); return };
-                        
+                        .json(&speech_request) else { failed.set(true); return };
+
+                    let Ok(resp) = req.send().await else { failed.set(true); return };
+
                     if !resp.ok() { failed.set(true); return }
                     let Ok(result) = resp.text().await else { failed.set(true); return };
                     data.set(Some(result));

@@ -18,6 +18,7 @@ pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingConte
         .ok()
 }
 
+//#[derive(Debug)]
 pub struct PlotError;
 
 impl<E: Error> From<E> for PlotError {
@@ -102,29 +103,30 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let canvas = canvas.clone();
         let inter_canvas = inter_canvas.clone();
         use_effect(move || {
-            || -> Result<(), PlotError> {
-                if !engine.try_borrow()?.is_empty() {
-                    engine.try_borrow_mut()?
-                        .redraw(canvas.cast().ok_or(PlotError)?, inter_canvas.cast().ok_or(PlotError)?)?;
+            if let Ok(mut eng) = engine.try_borrow_mut() {
+                if !eng.is_empty() {
+                    if let (Some(canvas), Some(inter_canvas)) = (canvas.cast(), inter_canvas.cast()) {
+                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { failed.set(true); });
+                    }
                 }
-                Ok(())
-            }().unwrap_or(failed.set(true));
+            }
             
             if let PlotSource::Uri(uri) = source {
-                if (*word_state) != word && visible {
+                if *word_state != word && visible && !*loading && !*failed {
                     loading.set(true);
                     word_state.set(word.clone());
                     let failed = failed.clone();
                     spawn_local(async move {
                         let breakdown_request = DataRequest { search: word };
-                        let Ok(resp) = Request::put(&format!("api/{}", uri))
+                        let Ok(req) = Request::put(&format!("api/{}", uri))
                             .header("Content-Type", "application/json")
-                            .json(&breakdown_request).expect("couldn't create request body")
-                            .send().await else { failed.set(true); return };
+                            .json(&breakdown_request) else { loading.set(false); failed.set(true); return };
+                            
+                        let Ok(resp) = req.send().await else { loading.set(false); failed.set(true); return };
                             
                         if !resp.ok() { failed.set(true); return }
-                        let Ok(result) = resp.text().await else { failed.set(true); return };
-                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result) else { failed.set(true); return };
+                        let Ok(result) = resp.text().await else { loading.set(false); failed.set(true); return };
+                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result) else { loading.set(false); failed.set(true); return };
                         
                         data_state.set(Some(Rc::from(data)));
                         loading.set(false);
@@ -141,9 +143,9 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let failed = failed.clone();
         Callback::from(move |e : MouseEvent| {
             if let Ok(eng) = engine.try_borrow() {
-                eng.clicked(e).unwrap_or(failed.set(true));
+                eng.clicked(e).unwrap_or_else(|_| { failed.set(true); });
             } else {
-                failed.set(true)
+                failed.set(true);
             }
         })
     };
@@ -155,7 +157,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         Callback::from(move |e : MouseEvent| {
             if let Some(ic) = inter_canvas.cast() {
                 if let Ok(mut eng) = engine.try_borrow_mut() {
-                    eng.hover(e, ic).unwrap_or(failed.set(true));
+                    eng.hover(e, ic).unwrap_or_else(|_| { failed.set(true); });
                 } else {
                     failed.set(true);
                 }
@@ -185,13 +187,11 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                     canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
                     inter_canvas_style = format!("width: {}px; height: {}px", width, height);
                     if let (Some(canvas), Some(inter_canvas)) = (canvas.clone().cast(), inter_canvas.clone().cast()) {
-                        eng.redraw(canvas, inter_canvas).unwrap_or(failed.set(true));
-                    } else {
-                        failed.set(true);
+                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { failed.set(true); });
                     }
                 }
             } else {
-                failed.set(true)
+                failed.set(true);
             }
         }
     }
