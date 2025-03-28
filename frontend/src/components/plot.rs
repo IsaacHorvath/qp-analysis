@@ -112,7 +112,8 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             }
             
             if let PlotSource::Uri(uri) = source {
-                if *word_state != word && visible && !*loading && !*failed {
+                if *word_state != word && visible && !*loading {
+                    failed.set(false);
                     loading.set(true);
                     word_state.set(word.clone());
                     let failed = failed.clone();
@@ -124,7 +125,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                             
                         let Ok(resp) = req.send().await else { loading.set(false); failed.set(true); return };
                             
-                        if !resp.ok() { failed.set(true); return }
+                        if !resp.ok() { loading.set(false); failed.set(true); return }
                         let Ok(result) = resp.text().await else { loading.set(false); failed.set(true); return };
                         let Ok(data) = serde_json::from_str::<Vec<R>>(&result) else { loading.set(false); failed.set(true); return };
                         
