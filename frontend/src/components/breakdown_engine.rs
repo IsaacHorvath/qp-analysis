@@ -114,7 +114,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         
         let x_axis = data.iter().map(|r| { r.name.clone() }).collect::<Vec<String>>();
         let y_max = data.iter().map(|r| { r.score }).max_by(|a, b| {a.total_cmp(b)}).ok_or(PlotError)?; 
-        let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).ok_or(PlotError)? as f32;
+        let c_max = data.iter().map(|r| { r.count }).max_by(|a, b| a.cmp(b)).ok_or(PlotError)? as f64;
 
         let mut chart= ChartBuilder::on(&drawing_area)
             .x_label_area_size((40.0 * self.dpr) as u32)
@@ -162,7 +162,7 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
             let left = i as f32 + if self.show_counts {0.15} else {0.20};
             let right = i as f32 + if self.show_counts {0.85} else {0.80};
             let mut top = r.score * (c_max / y_max);
-            if self.show_counts { top = f32::max(r.count as f32, top) }
+            if self.show_counts { top = f64::max(r.count as f64, top) }
             let tl = chart.borrow_secondary().backend_coord(&(left, top));
             let br = chart.borrow_secondary().backend_coord(&(right, 0.0));
             self.coord_mappings.push(CoordMapping { left: tl.0, top: tl.1, right: br.0, bottom: br.1, id: r.id });
@@ -176,13 +176,13 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
             
             let rgb = hex::decode(r.colour.clone())?;
             Ok(Rectangle::new([(left, 0.0), (right, s_height)], RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
-        }).collect::<Result<Vec<Rectangle<(f32, f32)>>, PlotError>>()?)?;
+        }).collect::<Result<Vec<Rectangle<(f32, f64)>>, PlotError>>()?)?;
         
         if self.show_counts {
             chart.draw_secondary_series(data.iter().enumerate().map(|(i, r)| {
                 let rgb = hex::decode(r.colour.clone())?;
-                Ok(Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f32)], RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
-            }).collect::<Result<Vec<Rectangle<(f32, f32)>>, PlotError>>()?)?;
+                Ok(Rectangle::new([(i as f32 + 0.51, 0.0), (i as f32 + 0.85, r.count as f64)], RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
+            }).collect::<Result<Vec<Rectangle<(f32, f64)>>, PlotError>>()?)?;
         }
         Ok(())
     }

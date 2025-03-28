@@ -24,8 +24,8 @@ struct PopDensity {
     pub name: String,
     pub pop_density: f64,
     pub colour: String,
-    pub count: i32,
-    pub score: f32,
+    pub count: i64,
+    pub score: f64,
 }
 
 pub struct PopulationEngine {
@@ -147,7 +147,7 @@ impl Plottable<PopulationResponse> for PopulationEngine {
             chart.draw_series(data.iter().map(|r| {
                 let rgb = hex::decode(r.colour.clone())?;
                 Ok(Circle::new((r.pop_density, r.score), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
-            }).collect::<Result<Vec<Circle<(f64, f32), i32>>, PlotError>>()?)?;
+            }).collect::<Result<Vec<Circle<(f64, f64), i32>>, PlotError>>()?)?;
             
             for r in data.iter() {
                 let p = chart.backend_coord(&(r.pop_density, r.score));
@@ -174,7 +174,7 @@ impl Plottable<PopulationResponse> for PopulationEngine {
             chart.draw_series(data.iter().map(|r| {
                 let rgb = hex::decode(r.colour.clone())?;
                 Ok(Circle::new((r.pop_density, r.count), self.point_size(), RGBColor(rgb[0], rgb[1], rgb[2]).filled()))
-            }).collect::<Result<Vec<Circle<(f64, i32), i32>>, PlotError>>()?)?;
+            }).collect::<Result<Vec<Circle<(f64, i64), i32>>, PlotError>>()?)?;
             
             for r in data.iter() {
                 let p = chart.backend_coord(&(r.pop_density, r.count));

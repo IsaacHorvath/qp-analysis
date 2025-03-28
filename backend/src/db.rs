@@ -19,7 +19,7 @@ use db::speaker::dsl::{
 use db::speech::dsl::{end, speaker as speech_speaker, speech, start, text};
 use db::speech_clean::dsl::{speech_clean, text as clean_text};
 use db::transcript::dsl::{link, transcript};
-use db::{concat, count_words};
+use db::{concat, count_words, score};
 use diesel::dsl::sum;
 use diesel::prelude::*;
 use diesel_async::{
@@ -28,7 +28,6 @@ use diesel_async::{
 };
 use dotenvy::dotenv;
 use std::env;
-use time::PrimitiveDateTime;
 
 pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
     dotenv().ok();
@@ -54,11 +53,7 @@ pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<S
         .load::<(i32, String, String)>(connection)
         .await?
         .into_iter()
-        .map(|row| SpeakerResponse {
-            id: row.0,
-            first_name: row.1,
-            last_name: row.2,
-        })
+        .map(|row| row.into())
         .collect())
 }
 
@@ -76,9 +71,9 @@ pub async fn get_breakdown_word_count(
                 party_name,
                 party_colour,
                 sum(count_words(text, word)),
-                party_total_words,
+                score(party_total_words, sum(count_words(text, word))),
             ))
-            .load::<(i32, String, String, Option<i64>, i32)>(connection),
+            .load::<BreakdownRow>(connection),
         BreakdownType::Gender => speech
             .inner_join(speaker.inner_join(gender))
             .group_by((gender_id, gender_name, gender_colour, gender_total_words))
@@ -87,9 +82,9 @@ pub async fn get_breakdown_word_count(
                 gender_name,
                 gender_colour,
                 sum(count_words(text, word)),
-                gender_total_words,
+                score(gender_total_words, sum(count_words(text, word))),
             ))
-            .load::<(i32, String, String, Option<i64>, i32)>(connection),
+            .load::<BreakdownRow>(connection),
         BreakdownType::Province => speech
             .filter(province_total_words.gt(0))
             .inner_join(speaker.inner_join(province))
@@ -104,9 +99,9 @@ pub async fn get_breakdown_word_count(
                 province_name,
                 province_colour,
                 sum(count_words(text, word)),
-                province_total_words,
+                score(province_total_words, sum(count_words(text, word))),
             ))
-            .load::<(i32, String, String, Option<i64>, i32)>(connection),
+            .load::<BreakdownRow>(connection),
         BreakdownType::Speaker => speech
             .filter(speaker_total_words.gt(0))
             .inner_join(speaker.inner_join(party))
@@ -122,26 +117,17 @@ pub async fn get_breakdown_word_count(
                 concat(first_name, " ", last_name),
                 party_colour,
                 sum(count_words(text, word)),
-                speaker_total_words,
+                score(speaker_total_words, sum(count_words(text, word))),
             ))
             .order(sum(count_words(text, word)).desc())
             .limit(10)
-            .load::<(i32, String, String, Option<i64>, i32)>(connection),
+            .load::<BreakdownRow>(connection),
     };
 
     Ok(loaded
         .await?
         .into_iter()
-        .filter(|row| if let Some(c) = row.3 {c > 0} else {false})
-        .map(|row| {
-            BreakdownResponse {
-                id: row.0,
-                name: row.1,
-                colour: row.2,
-                count: row.3.unwrap() as i32,
-                score: 100000.0 / (row.4 as f32) * (row.3.unwrap() as f32), // todo: this should be in sql
-            }
-        })
+        .filter_map(|row| to_breakdown_response(row))
         .collect())
 }
 
@@ -167,23 +153,12 @@ pub async fn get_population_word_count(
             area,
             party_colour,
             sum(count_words(text, word)),
-            speaker_total_words,
+            score(speaker_total_words, sum(count_words(text, word))),
         ))
-        .load::<(i32, String, i32, f64, String, Option<i64>, i32)>(connection)
+        .load::<PopulationRow>(connection)
         .await?
         .into_iter()
-        .filter_map(|row| {
-            Some(PopulationResponse {
-                id: row.0,
-                name: row.1,
-                population: row.2,
-                area: row.3,
-                colour: row.4,
-                count: row.5? as i32,
-                score: 100000.0 / (row.6 as f32) * (row.5? as f32), // todo: this should be in sql
-            })
-        })
-        //.filter_map(|row| row)
+        .filter_map(|row| to_population_response(row))
         .collect())
 }
 
@@ -201,7 +176,7 @@ pub async fn get_speeches(
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
-            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+            .load::<SpeechRow>(connection),
         BreakdownType::Gender => speech
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(gender))
@@ -209,7 +184,7 @@ pub async fn get_speeches(
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
-            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+            .load::<SpeechRow>(connection),
         BreakdownType::Province => speech
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(province))
@@ -221,7 +196,7 @@ pub async fn get_speeches(
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
-            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+            .load::<SpeechRow>(connection),
         BreakdownType::Speaker => speech
             .inner_join(speech_clean)
             .filter(
@@ -232,21 +207,12 @@ pub async fn get_speeches(
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
-            .load::<(i32, String, String, PrimitiveDateTime, PrimitiveDateTime)>(connection),
+            .load::<SpeechRow>(connection),
     };
 
     Ok(loaded
         .await?
         .into_iter()
-        .map(|row| {
-            SpeechResponse {
-                // todo: this should be modelled select instead of mapping it
-                speaker: row.0,
-                text: row.1,
-                link: row.2,
-                start: row.3,
-                end: row.4,
-            }
-        })
+        .map(|row| row.into())
         .collect())
 }

@@ -1,4 +1,4 @@
-use diesel::sql_types::{Mediumtext, Varchar};
+use diesel::sql_types::{BigInt, Integer, Mediumtext, Nullable, Varchar};
 
 diesel::table! {
     speaker (id) {
@@ -88,8 +88,9 @@ diesel::table! {
 
 
 diesel::define_sql_function!(fn last_insert_id() -> Integer);
-diesel::define_sql_function!(fn count_words(x: Mediumtext, y: Varchar) -> Integer);
 diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Varchar);
+diesel::define_sql_function!(fn count_words(x: Mediumtext, y: Varchar) -> Integer);
+diesel::define_sql_function!(fn score(x: Integer, y: Nullable<BigInt>) -> Nullable<Double>);
 
 diesel::joinable!(speech -> speaker (speaker));
 diesel::joinable!(speech -> speech_clean (id));
