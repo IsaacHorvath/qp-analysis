@@ -2,15 +2,7 @@
 resolver = "2"
 
 members = [
-    # federal etl
-    "fh-scraper",
-    "fh-translator",
-
-    # queens park etl
-    "qp-scraper",
-    "qp-translator",
-    
-    # analysis app
+    # app
     "backend",
     "frontend",
     
