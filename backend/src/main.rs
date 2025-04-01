@@ -114,16 +114,38 @@ async fn breakdown(
     Path(breakdown_type): Path<String>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<BreakdownResponse>>, AppError> {
+    
     let mut conn = state.connection_pool.get().await?;
+    let conn_id = get_connection_id(&mut conn).await?;
+    
+    let token = CancellationToken::new();
+    
+    state.sender.send(Message::Register((
+        ActiveQuery { uuid: payload.uuid.clone(), conn_id },
+        token.clone()
+    ))).await?;
+    
     let search = payload.search.to_lowercase().replace(
         |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
         "",
     );
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-
-    Ok(Json(
-        get_breakdown_word_count(&mut conn, breakdown_type, &search).await?,
-    ))
+    
+    let response = tokio::select! {
+        res = get_breakdown_word_count(&mut conn, breakdown_type, &search) => {
+            Ok(Json(res?))
+        }
+        _ = token.cancelled() => {
+            Err(AppError::Cancelled)
+        }
+    };
+    
+    // todo don't send this if we cancelled anyway
+    state.sender.send(Message::Deregister(
+        ActiveQuery { uuid: payload.uuid, conn_id }
+    )).await?;
+    
+    response
 }
 
 async fn population(
@@ -146,7 +168,7 @@ async fn population(
         "",
     );
     
-    let t = tokio::select! {
+    let response = tokio::select! {
         res = get_population_word_count(&mut conn, &search) => {
             Ok(Json(res?))
         }
@@ -154,13 +176,12 @@ async fn population(
             Err(AppError::Cancelled)
         }
     };
-    //let json = Json(get_population_word_count(&mut conn, &search).await?);
     
     state.sender.send(Message::Deregister(
         ActiveQuery { uuid: payload.uuid, conn_id }
     )).await?;
     
-    t
+    response
 }
 
 async fn speeches(
