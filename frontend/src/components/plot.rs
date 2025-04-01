@@ -1,14 +1,15 @@
-use common::models::{BreakdownType, DataRequest};
+use common::models::{BreakdownType, DataRequest, CancelRequest};
 use yew::prelude::*;
-use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use wasm_bindgen::JsCast;
 use crate::components::speech_overlay::OverlaySelection;
+use crate::util::put;
 use std::rc::Rc;
 use std::cell::RefCell;
 use yew_hooks::prelude::use_window_size;
 use std::error::Error;
+use uuid::Uuid;
 
 pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
     canvas
@@ -51,6 +52,7 @@ pub enum PlotSource {
 #[derive(Properties, PartialEq)]
 pub struct PlotProps
 {
+    pub uuid: Uuid,
     pub breakdown_type: BreakdownType,
     pub source: PlotSource,
     pub visible: bool,
@@ -94,6 +96,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     {
         let engine = engine.clone();
+        let uuid = props.uuid.clone();
         let visible = props.visible.clone();
         let data_state = data_state.clone();
         let loading = loading.clone();
@@ -112,22 +115,28 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             }
             
             if let PlotSource::Uri(uri) = source {
-                if *word_state != word && visible && !*loading {
+                if *word_state != word && visible {
                     failed.set(false);
                     loading.set(true);
                     word_state.set(word.clone());
                     let failed = failed.clone();
                     spawn_local(async move {
-                        let breakdown_request = DataRequest { search: word };
-                        let Ok(req) = Request::put(&format!("api/{}", uri))
-                            .header("Content-Type", "application/json")
-                            .json(&breakdown_request) else { loading.set(false); failed.set(true); return };
+                        let cancel_request = CancelRequest { uuid };
+                        let Ok(_) = put("api/cancel", cancel_request).await
+                            else { loading.set(false); failed.set(true); return };
+                        
+                        let breakdown_request = DataRequest { uuid, search: word };
+                        let Ok(resp) = put(&format!("api/{}", uri), breakdown_request).await
+                            else { loading.set(false); failed.set(true); return };
                             
-                        let Ok(resp) = req.send().await else { loading.set(false); failed.set(true); return };
+                        if resp.status() == 204 {
+                            return;
+                        }
                             
-                        if !resp.ok() { loading.set(false); failed.set(true); return }
-                        let Ok(result) = resp.text().await else { loading.set(false); failed.set(true); return };
-                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result) else { loading.set(false); failed.set(true); return };
+                        let Ok(result) = resp.text().await
+                            else { loading.set(false); failed.set(true); return };
+                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result)
+                            else { loading.set(false); failed.set(true); return };
                         
                         data_state.set(Some(Rc::from(data)));
                         loading.set(false);
@@ -200,7 +209,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     if *failed {
         canvas_style = "display: none".to_string();
         inter_canvas_style = "display: none".to_string();
-        message = "an error occured".to_string();
+        message = "an error occurred".to_string();
         message_style = "display: initial";
     }
         

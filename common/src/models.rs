@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::fmt;
 use time::PrimitiveDateTime;
+use uuid::Uuid;
 
 #[derive(Clone, PartialEq)]
 pub enum BreakdownType {
@@ -39,7 +40,13 @@ impl fmt::Display for BreakdownType {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct DataRequest {
+    pub uuid: Uuid,
     pub search: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct CancelRequest {
+    pub uuid: Uuid,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -96,7 +103,7 @@ pub struct PopulationResponse {
     pub area: f64,
     pub colour: String,
     pub count: i64,
-    pub score: f64,
+    pub score: f32,
 }
 
 pub type PopulationRow = (i32, String, i32, f64, String, Option<i64>, Option<f64>);
@@ -109,7 +116,7 @@ pub fn to_population_response(row: PopulationRow) -> Option<PopulationResponse> 
         area: row.3,
         colour: row.4,
         count: row.5?,
-        score: row.6?,
+        score: row.6? as f32,
     })
 }
 

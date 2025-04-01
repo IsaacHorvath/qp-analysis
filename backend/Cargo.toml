@@ -11,10 +11,14 @@ db = { version = "0.1.0", path = "../db" }
 diesel = { version = "2.2.7", features = ["time"] }
 dotenvy = "0.15.7"
 log = "0.4.25"
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "sync"] }
 tower = "0.5.2"
 tower-http = { version = "0.6.2", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 time = "0.3.37"
 diesel-async = { version = "0.5.2", features = ["bb8", "mysql"] }
+#sqlx = { version = "0.8.3", features = ["mysql", "runtime-tokio"] }
+futures = "0.3.31"
+uuid = { version = "1.16.0", features = ["serde", "v4"] }
+tokio-util = "0.7.14"

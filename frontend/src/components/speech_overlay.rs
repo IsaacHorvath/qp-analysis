@@ -1,11 +1,12 @@
-use common::models::{BreakdownType, DataRequest, SpeechResponse, Speaker};
+use common::models::{BreakdownType, DataRequest, CancelRequest, SpeechResponse, Speaker};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
-use gloo_net::http::Request;
+use crate::util::put;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use std::collections::HashMap;
 use std::rc::Rc;
+use uuid::Uuid;
 
 //todo move to new utils file
 #[derive(PartialEq, Clone)]
@@ -17,6 +18,7 @@ pub struct OverlaySelection {
 
 #[derive(Properties, PartialEq)]
 pub struct SpeechOverlayProps {
+    pub uuid: Uuid,
     pub selection: OverlaySelection,
     pub word: String,
     pub visible: bool,
@@ -32,6 +34,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
 
     {
         let data = data.clone();
+        let uuid = props.uuid.clone();
         let selection = props.selection.clone();
         let word = props.word.clone();
         let visible = props.visible;
@@ -41,15 +44,15 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 data.set(None);
                 selection_state.set(selection.clone());
                 spawn_local(async move {
-                    let speech_request = DataRequest { search: word };
+                    let cancel_request = CancelRequest { uuid };
+                    let Ok(_) = put("/api/cancel", cancel_request).await
+                        else { failed.set(true); return };
+                    
                     let uri = format!("/api/speeches/{}/{}", selection.breakdown_type, selection.id);
-                    let Ok(req) = Request::put(&uri)
-                        .header("Content-Type", "application/json")
-                        .json(&speech_request) else { failed.set(true); return };
-
-                    let Ok(resp) = req.send().await else { failed.set(true); return };
-
-                    if !resp.ok() { failed.set(true); return }
+                    let speech_request = DataRequest { uuid, search: word };
+                    let Ok(resp) = put(&uri, speech_request).await
+                        else { failed.set(true); return };
+                    
                     let Ok(result) = resp.text().await else { failed.set(true); return };
                     data.set(Some(result));
                 });

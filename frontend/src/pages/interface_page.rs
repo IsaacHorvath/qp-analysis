@@ -1,4 +1,5 @@
 use common::models::{BreakdownType, SpeakerResponse, Speaker};
+use uuid::Uuid;
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
@@ -12,6 +13,7 @@ use std::rc::Rc;
 #[derive(Properties, PartialEq)]
 pub struct InterfacePageProps {
     pub provincial: bool,
+    pub uuid: Uuid,
 }
 
 #[function_component(InterfacePage)]
@@ -172,6 +174,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             if !*failed {
                 <Charts
                     provincial={props.provincial}
+                    uuid={props.uuid}
                     word={(*word).clone()}
                     show_counts={*show_counts}
                     show_party={*show_party}
@@ -188,6 +191,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             if (*selection).id != 0 {
                 if !*loading && !*failed {
                     <SpeechOverlay
+                        uuid={props.uuid}
                         selection={(*selection).clone()}
                         word={(*speech_overlay_word).clone()}
                         visible={*speech_overlay_visible}

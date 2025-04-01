@@ -1,4 +1,3 @@
-//use serde::{Deserialize, Serialize};
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -6,15 +5,23 @@ use axum::{
 use common::models::BreakdownTypeParseError;
 use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::bb8::RunError;
+use tokio::sync::mpsc::error::SendError;
+
+use crate::reaper::Message;
 
 pub enum AppError {
     GenericError,
     ConnectionPoolError,
+    Cancelled
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
+            AppError::Cancelled => (
+                StatusCode::NO_CONTENT,
+                "request cancelled".to_owned(),
+            ),
             AppError::ConnectionPoolError => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 "our servers are very busy - please try again later".to_owned(),
@@ -31,6 +38,12 @@ impl IntoResponse for AppError {
 
 impl From<BreakdownTypeParseError> for AppError {
     fn from(_: BreakdownTypeParseError) -> Self {
+        Self::GenericError
+    }
+}
+
+impl From<SendError<Message>> for AppError {
+    fn from(_: SendError<Message>) -> Self {
         Self::GenericError
     }
 }
