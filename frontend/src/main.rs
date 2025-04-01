@@ -4,36 +4,29 @@ use components::navbar::*;
 use pages::error_page::error_page;
 use pages::interface_page::InterfacePage;
 use pages::info_page::InfoPage;
-use pages::prov_info_page::ProvInfoPage;
 use uuid::Uuid;
 
 mod pages;
 mod components;
 mod util;
 
+#[derive(Clone, Debug, PartialEq)]
+struct State {
+    uuid: Uuid,
+    provincial: bool,
+}
+
 fn switch(routes: Route) -> Html {
-    // what kind of error handling options are there in yew?
-    // eventually this will be a call to the backend anyway so we can be url agnostic
-    let Some(window) = web_sys::window() else {return error_page()};
-    let Some(document) = window.document() else {return error_page()};
-    let Ok(url) = document.url() else {return error_page()};
-    
-    let uuid = Uuid::new_v4();
-    
-    let provincial = url.contains("queen") || url.contains("localhost");
-    match (routes, provincial) {
-        (Route::Home, false) => html! { 
-            <InfoPage {uuid} />
+    match routes {
+        Route::Home => html! { 
+            <InfoPage />
         },
-        (Route::Home, true) => html! { 
-            <ProvInfoPage />
+        Route::Interface => html! { 
+            <InterfacePage />
         },
-        (Route::Interface, _) => html! { 
-            <InterfacePage {provincial} {uuid} />
-        },
-        (Route::NotFound, _) => html! {
+        Route::NotFound => html! {
             <NotFoundPage />
-        }
+        },
     }
 }
 
@@ -41,6 +34,7 @@ fn switch(routes: Route) -> Html {
 fn not_found_page() -> Html {
     let Some(navigator) = use_navigator() else {return error_page()};
     let onclick = Callback::from(move |_| navigator.push(&Route::Home));
+    
     html! {
         <div>
             <div style="display: flex; justify-content: center">
@@ -55,13 +49,22 @@ fn not_found_page() -> Html {
 
 #[function_component(App)]
 fn app() -> Html {
+    let Some(window) = web_sys::window() else {return error_page()};
+    let Some(document) = window.document() else {return error_page()};
+    let Ok(url) = document.url() else {return error_page()};
+    
+    let state = State {
+        uuid: Uuid::new_v4(),
+        provincial: url.contains("queen") || url.contains("localhost"),
+    };
+    
     html! {
-        <div>
+        <ContextProvider<State> context={state}>
             <BrowserRouter>
                 <Navbar />
                 <Switch<Route> render={switch} />
             </BrowserRouter>
-        </div>
+        </ContextProvider<State>>
     }
 }
 

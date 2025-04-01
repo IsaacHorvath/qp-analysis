@@ -1,5 +1,4 @@
 use common::models::{BreakdownType, CancelRequest, Speaker, SpeakerResponse};
-use uuid::Uuid;
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
@@ -7,18 +6,14 @@ use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::pages::error_page::error_page;
+use crate::State;
 use crate::util::put;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-#[derive(Properties, PartialEq)]
-pub struct InterfacePageProps {
-    pub provincial: bool,
-    pub uuid: Uuid,
-}
-
 #[function_component(InterfacePage)]
-pub fn interface_page(props: &InterfacePageProps) -> Html {
+pub fn interface_page() -> Html {
+    let app_state = use_context::<State>();
     let speakers = use_state(|| None);
     let loading = use_state(|| false);
     let failed = use_state(|| false);
@@ -88,17 +83,22 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     let submit = {
         let input_value = input_value.clone();
         let word = word.clone();
-        let uuid = props.uuid.clone();
+        let app_state = app_state.clone();
+        let failed = failed.clone();
         Callback::from(move |e : SubmitEvent| {
             e.prevent_default();
             let input_value = input_value.clone();
             let word = word.clone();
-            let uuid = uuid.clone();
-            spawn_local(async move {
-                let cancel_request = CancelRequest { uuid };
-                let _ = put("api/cancel", cancel_request).await;
-                word.set((*input_value).clone());
-            });
+            let app_state = app_state.clone();
+            if let Some(state) = app_state {
+                spawn_local(async move {
+                    let cancel_request = CancelRequest { uuid: state.uuid };
+                    let _ = put("api/cancel", cancel_request).await;
+                    word.set((*input_value).clone());
+                });
+            } else {
+                failed.set(true);
+            }
         })
     };
     
@@ -132,6 +132,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     };
     
     let dummy_ref = Rc::new(HashMap::new());
+    let provincial = if let Some(state) = app_state {state.provincial} else {failed.set(true); false};
     
     html! {
         <div class="interface">
@@ -148,7 +149,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                                 <label for="show_gender"> {"gender"}</label>
                                 <input type="checkbox" id="show_gender" onclick={on_gender} />
                             </div>
-                            if !props.provincial {
+                            if !provincial {
                                 <div>
                                     <label for="show_province"> {"province"}</label>
                                     <input type="checkbox" id="show_province" onclick={on_province} />
@@ -158,7 +159,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
                                 <label for="show_speaker"> {"speaker"}</label>
                                 <input type="checkbox" id="show_speaker" onclick={on_speaker} />
                             </div>
-                            if !props.provincial {
+                            if !provincial {
                                 <div>
                                     <label for="show_pop"> {"pop density"}</label>
                                     <input type="checkbox" id="show_pop" onclick={on_pop} />
@@ -182,8 +183,7 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             
             if !*failed {
                 <Charts
-                    provincial={props.provincial}
-                    uuid={props.uuid}
+                    {provincial}
                     word={(*word).clone()}
                     show_counts={*show_counts}
                     show_party={*show_party}
@@ -200,7 +200,6 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
             if (*selection).id != 0 {
                 if !*loading && !*failed {
                     <SpeechOverlay
-                        uuid={props.uuid}
                         selection={(*selection).clone()}
                         word={(*speech_overlay_word).clone()}
                         visible={*speech_overlay_visible}

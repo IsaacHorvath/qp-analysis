@@ -5,11 +5,11 @@ use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use wasm_bindgen::JsCast;
 use crate::components::speech_overlay::OverlaySelection;
 use crate::util::put;
+use crate::State;
 use std::rc::Rc;
 use std::cell::RefCell;
 use yew_hooks::prelude::use_window_size;
 use std::error::Error;
-use uuid::Uuid;
 
 pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
     canvas
@@ -52,7 +52,6 @@ pub enum PlotSource {
 #[derive(Properties, PartialEq)]
 pub struct PlotProps
 {
-    pub uuid: Uuid,
     pub breakdown_type: BreakdownType,
     pub source: PlotSource,
     pub visible: bool,
@@ -84,6 +83,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     let canvas = use_node_ref();
     let inter_canvas = use_node_ref();
     let window_width = use_window_size();
+    let app_state = use_context::<State>();
     let engine: Rc<RefCell<P>> = use_mut_ref(|| Plottable::new(props.breakdown_type.clone()));
     
     let heading = if let Ok(mut eng) = engine.try_borrow_mut() {
@@ -96,7 +96,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     {
         let engine = engine.clone();
-        let uuid = props.uuid.clone();
+        let app_state = app_state.clone();
         let visible = props.visible.clone();
         let data_state = data_state.clone();
         let loading = loading.clone();
@@ -121,7 +121,9 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                     word_state.set(word.clone());
                     let failed = failed.clone();
                     spawn_local(async move {
-                        let breakdown_request = DataRequest { uuid, search: word };
+                        let Some(state) = app_state
+                            else { loading.set(false); failed.set(true); return };
+                        let breakdown_request = DataRequest { uuid: state.uuid, search: word };
                         let Ok(resp) = put(&format!("api/{}", uri), breakdown_request).await
                             else { loading.set(false); failed.set(true); return };
                             

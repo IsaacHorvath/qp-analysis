@@ -1,12 +1,12 @@
 use common::models::{BreakdownType, DataRequest, CancelRequest, SpeechResponse, Speaker};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
+use crate::State;
 use crate::util::put;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use std::collections::HashMap;
 use std::rc::Rc;
-use uuid::Uuid;
 
 //todo move to new utils file
 #[derive(PartialEq, Clone)]
@@ -18,7 +18,6 @@ pub struct OverlaySelection {
 
 #[derive(Properties, PartialEq)]
 pub struct SpeechOverlayProps {
-    pub uuid: Uuid,
     pub selection: OverlaySelection,
     pub word: String,
     pub visible: bool,
@@ -30,11 +29,12 @@ pub struct SpeechOverlayProps {
 pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
     let data = use_state(|| None);
     let failed = use_state(|| false);
+    let app_state = use_context::<State>();
     let selection_state = use_state(|| OverlaySelection { breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")} ); // todo use default?
 
     {
         let data = data.clone();
-        let uuid = props.uuid.clone();
+        let app_state = app_state.clone();
         let selection = props.selection.clone();
         let word = props.word.clone();
         let visible = props.visible;
@@ -44,12 +44,15 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 data.set(None);
                 selection_state.set(selection.clone());
                 spawn_local(async move {
-                    let cancel_request = CancelRequest { uuid };
+                    let Some(state) = app_state
+                        else { failed.set(true); return };
+                    
+                    let cancel_request = CancelRequest { uuid: state.uuid };
                     let Ok(_) = put("/api/cancel/speeches", cancel_request).await
                         else { failed.set(true); return };
                     
                     let uri = format!("/api/speeches/{}/{}", selection.breakdown_type, selection.id);
-                    let speech_request = DataRequest { uuid, search: word };
+                    let speech_request = DataRequest { uuid: state.uuid, search: word };
                     let Ok(resp) = put(&uri, speech_request).await
                         else { failed.set(true); return };
                             
@@ -62,7 +65,7 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 });
             }
 
-            || {} //todo check if can remove
+            || {}
         });
     }
     

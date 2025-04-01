@@ -1,6 +1,5 @@
 use yew::prelude::*;
 use common::models::{BreakdownType, BreakdownResponse, PopulationResponse};
-use uuid::Uuid;
 use crate::components::plot::{Plot, PlotSource};
 use crate::components::speech_overlay::OverlaySelection;
 use crate::components::population_engine::PopulationEngine;
@@ -9,7 +8,6 @@ use crate::components::breakdown_engine::BreakdownEngine;
 #[derive(Properties, PartialEq)]
 pub struct ChartsProps {
     pub provincial: bool,
-    pub uuid: Uuid,
     pub word: String,
     pub show_counts: bool,
     pub show_party: bool,
@@ -25,7 +23,6 @@ pub fn charts(props: &ChartsProps) -> Html {
     html! {
         <div class="charts">
             <Plot<BreakdownEngine, BreakdownResponse>
-                uuid={props.uuid}
                 breakdown_type={BreakdownType::Party}
                 source={PlotSource::Uri("breakdown/party".to_string())}
                 visible={props.show_party}
@@ -34,7 +31,6 @@ pub fn charts(props: &ChartsProps) -> Html {
                 get_speeches={&props.get_speeches}
             />
             <Plot<BreakdownEngine, BreakdownResponse>
-                uuid={props.uuid}
                 breakdown_type={BreakdownType::Gender}
                 source={PlotSource::Uri("breakdown/gender".to_string())}
                 visible={props.show_gender}
@@ -44,7 +40,6 @@ pub fn charts(props: &ChartsProps) -> Html {
             />
             if !props.provincial {
                 <Plot<BreakdownEngine, BreakdownResponse>
-                    uuid={props.uuid}
                     breakdown_type={BreakdownType::Province}
                     source={PlotSource::Uri("breakdown/province".to_string())}
                     visible={props.show_province}
@@ -54,7 +49,6 @@ pub fn charts(props: &ChartsProps) -> Html {
                 />
             }
             <Plot<BreakdownEngine, BreakdownResponse>
-                uuid={props.uuid}
                 breakdown_type={BreakdownType::Speaker}
                 source={PlotSource::Uri("breakdown/speaker".to_string())}
                 visible={props.show_speaker}
@@ -64,7 +58,6 @@ pub fn charts(props: &ChartsProps) -> Html {
             />
             if !props.provincial {
                 <Plot<PopulationEngine, PopulationResponse>
-                    uuid={props.uuid}
                     breakdown_type={BreakdownType::Speaker}
                     source={PlotSource::Uri("population".to_string())}
                     visible={props.show_pop}

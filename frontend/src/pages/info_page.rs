@@ -10,17 +10,12 @@ use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
 use crate::pages::info_page_data::*;
+use crate::State;
 use std::collections::HashMap;
 use std::rc::Rc;
-use uuid::Uuid;
-
-#[derive(Properties, PartialEq)]
-pub struct InfoPageProps {
-    pub uuid: Uuid,
-}
 
 #[function_component(InfoPage)]
-pub fn info_page(props: &InfoPageProps) -> Html {
+pub fn info_page() -> Html {
     let speakers = use_state(|| None);
     let failed = use_state(|| false);
     
@@ -53,6 +48,18 @@ pub fn info_page(props: &InfoPageProps) -> Html {
     
             || {}
         });
+    }
+    
+    if let Some(state) = use_context::<State>() {
+        if state.provincial {
+            return html! {
+                <div class="info">
+                    <h2>{"What is this tool?"}</h2>
+                    <p>{"This tool is a word search that lets you compare how different categories of provincial MMPs use language in the Ontario legislature. Click the search button at the top to try it out!"}</p>
+                    <p>{"The rest of this info page stuck in development as I am currently working on the federal version of this tool hosted "}<a href="https://housewords.chunkerbunker.cc">{"here"}</a>{"."}</p>
+                </div>
+            }
+        }
     }
     
     let get_speeches = |w: String| {
@@ -97,7 +104,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"To use the search interface, type in a word or phrase into the box labeled \"search term\" and hit the submit button. For example, here's what will pop up with the default settings if you enter \"pipeline\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Party}
                         source={PlotSource::Json(pipeline_party_data())}
                         visible={true}
@@ -111,7 +117,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"Members of the Conservative Party said \"pipeline\" more than 650 times, in fact, but this is a much smaller number of mentions in proportion to their 120 seats, as well as the extra speaking time they get as the official opposition. If you're wondering where I got that 650 number, you can check \"total counts\" to the right of the search box and see a second set of bars on the chart to the right of the original ones. These correspond with an axis on the right side of the chart that measures the total times each party said the word you searched:"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Party}
                         source={PlotSource::Json(pipeline_party_data())}
                         visible={true}
@@ -178,7 +183,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Gender}
                         source={PlotSource::Json(mental_gender_data())}
                         visible={true}
@@ -192,7 +196,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"The breakdown by province is fairly self-explanatory. Here's what it looks like when you search \"trump\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Province}
                         source={PlotSource::Json(trump_province_data())}
                         visible={true}
@@ -206,7 +209,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and looks like this with the example search \"pharmacare\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Speaker}
                         source={PlotSource::Json(pharma_speaker_data())}
                         visible={true}
@@ -222,7 +224,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 <p>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
                 <div class="info-chart">
                     <Plot<PopulationEngine, PopulationResponse>
-                        uuid={props.uuid}
                         breakdown_type={BreakdownType::Speaker}
                         source={PlotSource::Json(gaza_pop_data())}
                         visible={true}
@@ -236,7 +237,6 @@ pub fn info_page(props: &InfoPageProps) -> Html {
                 if (*selection).id != 0 {
                     if (*loading) == false {
                         <SpeechOverlay
-                            uuid={props.uuid}
                             selection={(*selection).clone()}
                             word={(*speech_overlay_word).clone()}
                             visible={*speech_overlay_visible}
