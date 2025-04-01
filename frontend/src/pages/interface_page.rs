@@ -204,7 +204,7 @@ pub fn interface_page() -> Html {
                         word={(*speech_overlay_word).clone()}
                         visible={*speech_overlay_visible}
                         hide={hide_speech_overlay}
-                            speakers={Rc::clone((*speakers).as_ref().unwrap_or_else(|| {failed.set(true); &dummy_ref}))}
+                        speakers={Rc::clone((*speakers).as_ref().unwrap_or_else(|| {failed.set(true); &dummy_ref}))}
                     />
                 }
             }

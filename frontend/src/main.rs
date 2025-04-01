@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 use components::navbar::*;
+use pages::about_me_page::AboutMePage;
 use pages::error_page::error_page;
 use pages::interface_page::InterfacePage;
 use pages::info_page::InfoPage;
@@ -23,6 +24,9 @@ fn switch(routes: Route) -> Html {
         },
         Route::Interface => html! { 
             <InterfacePage />
+        },
+        Route::About => html! {
+            <AboutMePage />
         },
         Route::NotFound => html! {
             <NotFoundPage />

@@ -12,6 +12,8 @@ pub enum Route {
     Home,
     #[at("/search")]
     Interface,
+    #[at("/about")]
+    About,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -19,8 +21,14 @@ pub enum Route {
 
 #[function_component(Navbar)]
 pub fn navbar() -> Html {
+    // todo better way to get where we are
     let Some(location) = use_location() else { return error_page() };
-    let info = location.path() == "/";
+    let info = match location.path() {
+        "/" => Route::Home,
+        "/search" => Route::Interface,
+        "/about" => Route::About,
+        _ => Route::NotFound,
+    };
     
     let window = window();
     let prev_s = use_state(|| 0);
@@ -52,12 +60,17 @@ pub fn navbar() -> Html {
         <div class={(*navbar_class).clone()}>
             <div class="navbar-item">
                 <Link<Route> to={Route::Interface}>
-                    <button class={if info {"button"} else {"button highlight"}} >{"search"}</button>
+                    <button class={if info == Route::Interface {"button highlight"} else {"button"}} >{"search"}</button>
                 </Link<Route>>
             </div>
             <div class="navbar-item">
                 <Link<Route> to={Route::Home}>
-                    <button class={if info {"button highlight"} else {"button"}}>{"info"}</button>
+                    <button class={if info == Route::Home {"button highlight"} else {"button"}}>{"info"}</button>
+                </Link<Route>>
+            </div>
+            <div class="navbar-item">
+                <Link<Route> to={Route::About}>
+                    <button class={if info == Route::About {"button highlight"} else {"button"}}>{"about"}</button>
                 </Link<Route>>
             </div>
             <div class="navbar-item">
