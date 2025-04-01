@@ -45,13 +45,17 @@ pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {
                 selection_state.set(selection.clone());
                 spawn_local(async move {
                     let cancel_request = CancelRequest { uuid };
-                    let Ok(_) = put("/api/cancel", cancel_request).await
+                    let Ok(_) = put("/api/cancel/speeches", cancel_request).await
                         else { failed.set(true); return };
                     
                     let uri = format!("/api/speeches/{}/{}", selection.breakdown_type, selection.id);
                     let speech_request = DataRequest { uuid, search: word };
                     let Ok(resp) = put(&uri, speech_request).await
                         else { failed.set(true); return };
+                            
+                    if resp.status() == 204 {
+                        return;
+                    }
                     
                     let Ok(result) = resp.text().await else { failed.set(true); return };
                     data.set(Some(result));

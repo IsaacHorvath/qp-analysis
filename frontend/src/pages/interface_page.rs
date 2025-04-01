@@ -1,4 +1,4 @@
-use common::models::{BreakdownType, SpeakerResponse, Speaker};
+use common::models::{BreakdownType, CancelRequest, Speaker, SpeakerResponse};
 use uuid::Uuid;
 use yew::prelude::*;
 use gloo::utils::body;
@@ -7,6 +7,7 @@ use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::pages::error_page::error_page;
+use crate::util::put;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -87,9 +88,17 @@ pub fn interface_page(props: &InterfacePageProps) -> Html {
     let submit = {
         let input_value = input_value.clone();
         let word = word.clone();
+        let uuid = props.uuid.clone();
         Callback::from(move |e : SubmitEvent| {
             e.prevent_default();
-            word.set((*input_value).clone());
+            let input_value = input_value.clone();
+            let word = word.clone();
+            let uuid = uuid.clone();
+            spawn_local(async move {
+                let cancel_request = CancelRequest { uuid };
+                let _ = put("api/cancel", cancel_request).await;
+                word.set((*input_value).clone());
+            });
         })
     };
     

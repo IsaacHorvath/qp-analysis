@@ -32,7 +32,7 @@ use dotenvy::dotenv;
 use std::env;
 
 #[derive(QueryableByName)]
-pub struct ConnectionId {
+struct ConnectionId {
     #[diesel(sql_type = Integer)]
     id: i32
 }
@@ -186,91 +186,6 @@ pub async fn get_population_word_count(
         .filter_map(|row| to_population_response(row))
         .collect())
 }
-
-// pub async fn gpwc(
-//     pool: &sqlx::Pool<sqlx::MySql>,
-//     word: &str
-// ) -> Result<Vec<PopulationResponse>, AppError> {
-//     
-//     //let mut conn: MySqlConnection = pool.acquire().await?;
-//     
-//     let query = sqlx::query(r#"
-//         SELECT
-//             sp.id
-//             ,r.name
-//             ,r.population
-//             ,r.area
-//             ,p.colour
-//             ,CAST(SUM(count_words(s.text, ?)) as INT) as count
-//             ,CAST((100000 / sp.total_words) * SUM(count_words(s.text, ?)) as DOUBLE) as score
-//         FROM speech_clean s
-//             INNER JOIN speaker sp
-//                 ON s.speaker = sp.id
-//             INNER JOIN party p
-//                 ON sp.party = p.id
-//             INNER JOIN riding r
-//                 ON sp.riding = r.id
-//         WHERE sp.total_words > 0
-//         GROUP BY
-//             sp.id
-//             ,r.name
-//             ,r.population
-//             ,r.area
-//             ,p.colour
-//             ,sp.total_words
-//     "#)
-//         .bind(word)
-//         .bind(word);
-//     
-//     Ok(query
-//         .fetch_all(pool)
-//         .await?
-//         .into_iter()
-//         .map(|row| PopulationResponse {
-//             id: row.get(0),
-//             name: row.get(1),
-//             population: row.get(2),
-//             area: row.get(3),
-//             colour: row.get(4),
-//             count: row.get(5),
-//             score: row.get(6),
-//         })
-//         .collect())
-    
-    // Ok(rows.
-    //     into_iter()
-    //     .filter_map(|row| to_population_response(row))
-    //     .collect()
-    // )
-    
-    
-        
-    // Ok(speech
-    //     .filter(speaker_total_words.gt(0))
-    //     .inner_join(speaker.inner_join(party).inner_join(riding))
-    //     .group_by((
-    //         speaker_id,
-    //         riding_name,
-    //         population,
-    //         area,
-    //         party_colour,
-    //         speaker_total_words,
-    //     ))
-    //     .select((
-    //         speaker_id,
-    //         riding_name,
-    //         population,
-    //         area,
-    //         party_colour,
-    //         sum(count_words(text, word)),
-    //         score(speaker_total_words, sum(count_words(text, word))),
-    //     ))
-    //     .load::<PopulationRow>(connection)
-    //     .await?
-    //     .into_iter()
-    //     .filter_map(|row| to_population_response(row))
-    //     .collect())
-//}
 
 pub async fn get_speeches(
     connection: &mut AsyncMysqlConnection,

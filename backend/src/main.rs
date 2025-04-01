@@ -76,6 +76,7 @@ async fn main() {
         .route("/api/population", put(population))
         .route("/api/speeches/{breakdown}/{id}", put(speeches))
         .route("/api/cancel", put(cancel))
+        .route("/api/cancel/speeches", put(cancel_speech))
         .with_state(state)
         .fallback_service(
             ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)),
@@ -121,7 +122,7 @@ async fn breakdown(
     let token = CancellationToken::new();
     
     state.sender.send(Message::Register((
-        ActiveQuery { uuid: payload.uuid.clone(), conn_id },
+        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
         token.clone()
     ))).await?;
     
@@ -142,7 +143,7 @@ async fn breakdown(
     
     // todo don't send this if we cancelled anyway
     state.sender.send(Message::Deregister(
-        ActiveQuery { uuid: payload.uuid, conn_id }
+        ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
     )).await?;
     
     response
@@ -159,7 +160,7 @@ async fn population(
     let token = CancellationToken::new();
     
     state.sender.send(Message::Register((
-        ActiveQuery { uuid: payload.uuid.clone(), conn_id },
+        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
         token.clone()
     ))).await?;
     
@@ -178,7 +179,7 @@ async fn population(
     };
     
     state.sender.send(Message::Deregister(
-        ActiveQuery { uuid: payload.uuid, conn_id }
+        ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
     )).await?;
     
     response
@@ -189,19 +190,45 @@ async fn speeches(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<SpeechResponse>>, AppError> {
+    
     let mut conn = state.connection_pool.get().await?;
-    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
+    let conn_id = get_connection_id(&mut conn).await?;
+    
+    let token = CancellationToken::new();
+    
+    state.sender.send(Message::Register((
+        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: true },
+        token.clone()
+    ))).await?;
+    
     let search = payload.search.to_lowercase().replace(
         |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
         "",
     );
+    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
+    
+    let response = tokio::select! {
+        res = get_speeches(&mut conn, breakdown_type, id, &search) => {
+            Ok(Json(res?))
+        }
+        _ = token.cancelled() => {
+            Err(AppError::Cancelled)
+        }
+    };
+    
+    state.sender.send(Message::Deregister(
+        ActiveQuery { uuid: payload.uuid, conn_id, speech: true }
+    )).await?;
 
-    Ok(Json(
-        get_speeches(&mut conn, breakdown_type, id, &search).await?,
-    ))
+    response
 }
 
 async fn cancel(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
     state.sender.send(Message::Kill(payload.uuid)).await?;
+    Ok(())
+}
+
+async fn cancel_speech(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
+    state.sender.send(Message::KillSpeech(payload.uuid)).await?;
     Ok(())
 }

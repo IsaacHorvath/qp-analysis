@@ -1,4 +1,4 @@
-use common::models::{BreakdownType, DataRequest, CancelRequest};
+use common::models::{BreakdownType, DataRequest};
 use yew::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
@@ -121,10 +121,6 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                     word_state.set(word.clone());
                     let failed = failed.clone();
                     spawn_local(async move {
-                        let cancel_request = CancelRequest { uuid };
-                        let Ok(_) = put("api/cancel", cancel_request).await
-                            else { loading.set(false); failed.set(true); return };
-                        
                         let breakdown_request = DataRequest { uuid, search: word };
                         let Ok(resp) = put(&format!("api/{}", uri), breakdown_request).await
                             else { loading.set(false); failed.set(true); return };
