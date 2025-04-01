@@ -24,7 +24,6 @@ pub async fn reaper(pool: Pool<AsyncMysqlConnection>, receiver: &mut Receiver<Me
     while let Some(recv) = receiver.recv().await {
         match recv {
             Message::Register((rq, cancel_token)) => {
-                println!("registering {}:\t{}!", rq.uuid, rq.conn_id);
                 if let Some(conn_id_map) = active_queries.get_mut(&rq.uuid) {
                     conn_id_map.insert(rq.conn_id, cancel_token);
                 } else {
@@ -34,20 +33,19 @@ pub async fn reaper(pool: Pool<AsyncMysqlConnection>, receiver: &mut Receiver<Me
                 }
             },
             Message::Deregister(rq) => {
-                println!("deregistering {}:\t{}!", rq.uuid, rq.conn_id);
                 if let Some(conn_id_map) = active_queries.get_mut(&rq.uuid) {
                     conn_id_map.remove(&rq.conn_id);
                 }
             },
             Message::Kill(uuid) => {
-                println!("killing connections for {}!", uuid);
                 if let Some(conn_id_map) = active_queries.get_mut(&uuid) {
-                    println!("found some");
+                    let conn_ids = conn_id_map
+                        .iter()
+                        .map(|(conn_id, cancel_token)| {cancel_token.cancel(); conn_id})
+                        .collect::<Vec<&i32>>();
+                    
                     if let Ok(mut conn) = pool.get().await {
-                        for (conn_id, cancel_token) in conn_id_map.iter() {
-                            println!("sending cancellation for {}!", conn_id);
-                            cancel_token.cancel();
-                            println!("killing connection {}!", conn_id);
+                        for conn_id in conn_ids {
                             let _ = kill_connection_id(&mut conn, conn_id).await;
                         }
                     }
