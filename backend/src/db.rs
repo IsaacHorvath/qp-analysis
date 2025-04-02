@@ -37,6 +37,11 @@ struct ConnectionId {
     id: i32
 }
 
+/// Returns an initialized bb8 connection pool for the database.
+///
+/// Panics on error, since there's no point in trying to run without database
+/// connections.
+
 pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
     dotenv().ok();
 
@@ -55,6 +60,9 @@ pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
         .expect("Could not build connection pool")
 }
 
+/// Returns the MariaDB connection id, as an i32, that corresponds to the connection
+/// parameter. See the [mariadb CONNECTION_ID docs](https://mariadb.com/kb/en/connection_id/).
+
 pub async fn get_connection_id(connection: &mut AsyncMysqlConnection) -> Result<i32, AppError> {
     Ok(sql_query("SELECT CONNECTION_ID() AS id;")
         .load::<ConnectionId>(connection)
@@ -64,6 +72,9 @@ pub async fn get_connection_id(connection: &mut AsyncMysqlConnection) -> Result<
         .id)
 }
 
+/// Kills the query associated with the gived connection id. See the
+/// [mariadb KILL docs](https://mariadb.com/kb/en/kill/).
+
 pub async fn kill_connection_id(connection: &mut AsyncMysqlConnection, id: &i32) -> Result<(), AppError> {
     let _ = sql_query(format!("KILL QUERY {};", id))
         .execute(connection)
@@ -71,6 +82,8 @@ pub async fn kill_connection_id(connection: &mut AsyncMysqlConnection, id: &i32)
         
     Ok(())
 }
+
+/// Returns all the speakers in the database, as SpeakerResponse objects.
 
 pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<SpeakerResponse>, AppError> {
     Ok(speaker
@@ -82,6 +95,18 @@ pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<S
         .collect())
 }
 
+/// Returns breakdown data of the given type (party, gender, etc.) for the given word.
+///
+/// The parameters are:
+/// - connnection: the async MySQL connection
+/// - breakdown_type: the breakdown type  
+/// - word: the word to search for
+///
+/// The return type is BreakdownResponse, which contains the id of the breakdown (e.g. party
+/// id, gender id,  etc.), the breakdown name, the breakdown colour, the sum of all times
+/// that the word is mentioned for that breakdown, and that sum adjusted to the number of
+/// words spoken in total.
+
 pub async fn get_breakdown_word_count(
     connection: &mut AsyncMysqlConnection,
     breakdown_type: BreakdownType,
@@ -89,6 +114,7 @@ pub async fn get_breakdown_word_count(
 ) -> Result<Vec<BreakdownResponse>, AppError> {
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
+            .filter(party_total_words.gt(0))
             .inner_join(speaker.inner_join(party))
             .group_by((party_id, party_name, party_colour, party_total_words))
             .select((
@@ -100,6 +126,7 @@ pub async fn get_breakdown_word_count(
             ))
             .load::<BreakdownRow>(connection),
         BreakdownType::Gender => speech
+            .filter(gender_total_words.gt(0))
             .inner_join(speaker.inner_join(gender))
             .group_by((gender_id, gender_name, gender_colour, gender_total_words))
             .select((
@@ -156,6 +183,13 @@ pub async fn get_breakdown_word_count(
         .collect())
 }
 
+/// Returns riding population density data for the given word.
+///
+/// The return type is PopulationResponse, which contains the id of the speaker, the
+/// riding name, the riding population, the riding area, the party colour, the sum of
+/// all times that the word is mentioned for that breakdown, and that sum adjusted to
+/// the number of words spoken in total.
+
 pub async fn get_population_word_count(
     connection: &mut AsyncMysqlConnection,
     word: &str,
@@ -186,6 +220,17 @@ pub async fn get_population_word_count(
         .filter_map(|row| to_population_response(row))
         .collect())
 }
+
+/// Returns all speeches matching the breakdown that contain the requested word.
+///
+/// The parameters are:
+/// - connnection: the async MySQL connection
+/// - breakdown_type: the breakdown type
+/// - id: the breakdown id
+/// - word: the word to search for
+///
+/// The return type is SpeechResponse, which contains the speaker id, the text of the
+/// speech, a link to the original transcript, the start time, and the end time.
 
 pub async fn get_speeches(
     connection: &mut AsyncMysqlConnection,
