@@ -76,19 +76,32 @@ services:
     restart: unless-stopped
 ```
 
-Note that on a *proper* production server, this container should be run behind a reverse proxy. Since no volumes are required, you can create a dedicated user and group for the container and run it as that user and group with environmental variables PUID and PGID, and neither the user nor the group need read, write, or execute permissions anywhere on the server.
+Note that on a production server, this container should be run behind a reverse proxy. Since no volumes are required, you can create a dedicated user and group for the container and run it as that user and group with environmental variables PUID and PGID, and neither the user nor the group need read, write, or execute permissions *anywhere* on the server.
 
 ## Technical Info
 
 ### Overview
-The repository is structured as a rust workspace containing four packages. `backend` contains the axum web server and uses diesel to make queries to the database and pull the requested numbers. `frontend` is a yew wasm app that makes use of the plotters library to render graphs on canvas elements. `db` holds diesel database schemas and join/group by rules for the backend, separated so as to be accessed both by the backend and as a library by independent translator repositories. `common` is a set of common types and serializable data models that the backend and frontend use to communicate.
+The repository is structured as a rust workspace containing four packages. `backend` contains the [axum](https://crates.io/crates/axum/) web server and uses [diesel](https://crates.io/crates/diesel) to make queries to the database and pull the requested numbers. `frontend` is a [yew](https://crates.io/crates/yew) wasm app that makes use of the plotters library to render graphs on canvas elements. `db` holds diesel database schemas and join/group by rules for the backend, separated so as to be accessed both by the backend and as a library by independent translator repositories. `common` is a set of common types and serializable data models that the backend and frontend use to communicate.
 
-Documentation is ongoing for this project and I intend to continue to improve the 
+Documentation is ongoing for this project. The Rust ecosystem has a secure foundation, but its novelty demands dedicated exploration. In the interest of sharing as much as I've learned as possible, and growing the sphere of open source public data accountability, I intend to continue to clarify component parts and add explanation to more complicated sections of the code.
 
 ### Backend
 The backend for this project is relatively simple. Database calls are constructed using diesel, and the axum state holds onto a bb8 connection pool that allows each request handler to easily fire up a new connection. The most complicated part of the process is the reaper, which runs as an asynchronous loop waiting for messages from handlers. Each handler registers an active query with the reaper for the duration of its database request, and if a cancel message is received from the frontend for a particular user, all queries registered that user are cancelled.
 
 ### Frontend
-The frontend is a single-page yew app. Pages are contained in the /pages folder, and everything more modular than that (including the navbar) is in the /components folder. The main interface page controls whether various charts are visible, and visible charts send queries to the backend when submits a new word. New word submissions trigger cancellation requests to the backend, and the speech overlay (which appears when clicking on a particular breakdown bar or population point) handles its own requests and cancellations. The info page packs its own data (for now) but is able to bring up a speech overlay for its demo graphs.
+The frontend is a single-page yew app. Pages are contained in the /pages folder, and everything more modular than that (including the navbar) is in the /components folder. The main interface page controls whether various charts are visible, and visible charts send queries to the backend when submits a new word. New word submissions trigger cancellation requests to the backend, and the speech overlay (which appears when clicking on a particular breakdown bar or population point) sends its own requests and has its own cancellation call. The info page bundles its own data (for now) but is able to bring up a speech overlay for its demo graphs.
 
 Charts are rendered using the CanvasBackend in plotters, which can render to a canvas element in yew via the `use_node_ref()` hook. Eventually, an SVG plotting library could open the door to much more sophisticated interactivity, but at this simple level (one hover function and one click function for each graph) the canvas element works well enough and keeps the DOM much smaller.
+
+## Todo
+- [x] Dropdown for graph selection
+- [x] About me page 🫣
+- [x] Transaction cancelling
+- [x] Github readme
+- [ ] Code comments and documentation
+- [ ] Ontario info page
+- [ ] Ontario population scatter plot
+- [ ] Time series selection
+- [ ] Word or combinations
+- [ ] Other provinces
+- [ ] U.S. Congress?
