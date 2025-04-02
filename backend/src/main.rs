@@ -25,7 +25,6 @@ mod error;
 mod reaper;
 
 // todo use clap for dev dummy db
-
 #[derive(Parser, Debug)]
 #[clap(name = "backend", about = "queens park analysis backend")]
 struct Opt {
@@ -47,6 +46,12 @@ struct AppState {
     connection_pool: Pool<AsyncMysqlConnection>,
     sender: Sender<Message>,
 }
+
+/// The main backend function.
+///
+/// This function parses the command line arguments; sets
+/// up the state, the reaper, and its message channel; configures all the routes and
+/// the tracing middleware; sets up the listener and serves it via axum.
 
 #[tokio::main]
 async fn main() {
@@ -105,10 +110,18 @@ async fn main() {
         .expect("Unable to start server");
 }
 
+/// Return all speakers in the database.
+
 async fn speakers(State(state): State<AppState>) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
     let mut conn = state.connection_pool.get().await?;
     Ok(Json(get_speakers(&mut conn).await?))
 }
+
+/// Return all speeches matching the given word and breakdown type. See db call for
+/// description of return columns.
+///
+/// This handler registers a cancellation token with the reaper, and will return
+/// status 204 if cancelled.
 
 async fn breakdown(
     State(state): State<AppState>,
@@ -149,6 +162,12 @@ async fn breakdown(
     response
 }
 
+/// Return population data matching the given word. See db call for description of
+/// return columns.
+///
+/// This handler registers a cancellation token with the reaper, and will return
+/// status 204 if cancelled.
+
 async fn population(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
@@ -184,6 +203,12 @@ async fn population(
     
     response
 }
+
+/// Return all speeches matching the given word, breakdown type, and id. See db call
+/// for description of return columns.
+///
+/// This handler registers a cancellation token with the reaper, and will return\
+/// status 204 if cancelled.
 
 async fn speeches(
     Path((breakdown_type, id)): Path<(String, i32)>,
@@ -223,10 +248,14 @@ async fn speeches(
     response
 }
 
+/// Cancel all current requests associated with the uuid in the payload.
+
 async fn cancel(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
     state.sender.send(Message::Kill(payload.uuid)).await?;
     Ok(())
 }
+
+/// Cancel all current speech requests associated with the uuid in the payload.
 
 async fn cancel_speech(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
     state.sender.send(Message::KillSpeech(payload.uuid)).await?;
