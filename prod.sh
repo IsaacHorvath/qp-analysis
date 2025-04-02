@@ -6,4 +6,4 @@ pushd frontend
 trunk build --release
 popd
 
-cargo run --bin backend --release -- --addr :: --port 8080 --static-dir ./dist
+DATA_SOURCE=federal_house cargo run --bin backend --release -- --addr :: --port 8080 --static-dir ./dist
