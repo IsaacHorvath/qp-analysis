@@ -3,7 +3,6 @@
 //! Serves the frontend wasm binary, and provides api routes that return the results
 //! of SQL queries on an external MariaDB instance.
 
-#![warn(missing_docs)]
 use crate::db::*;
 use crate::dummy_db::*;
 use crate::error::AppError;

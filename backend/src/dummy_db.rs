@@ -2,6 +2,10 @@ use common::models::*;
 use time::macros::{date, time};
 use time::PrimitiveDateTime;
 
+/// Return a dummy set of speakers.
+///
+/// This list happens to be mostly complete and accurate.
+
 pub fn dummy_get_speakers() -> Vec<SpeakerResponse> {
     vec![
         SpeakerResponse {
@@ -1787,6 +1791,10 @@ pub fn dummy_get_speakers() -> Vec<SpeakerResponse> {
     ]
 }
 
+/// Return a dummy set of data for all possible breakdown chart types.
+///
+/// This data is roughly the same as the demonstrations in the info page.
+
 pub fn dummy_get_breakdown_word_count(breakdown_type: BreakdownType) -> Vec<BreakdownResponse> {
     match breakdown_type {
         BreakdownType::Party => vec![
@@ -1995,6 +2003,10 @@ pub fn dummy_get_breakdown_word_count(breakdown_type: BreakdownType) -> Vec<Brea
         ],
     }
 }
+
+/// Return a dummy set of data for the population density scatterplot.
+///
+/// This data is roughly the same as the demonstration in the info page.
 
 pub fn dummy_get_population_word_count() -> Vec<PopulationResponse> {
     vec![
@@ -5123,6 +5135,10 @@ pub fn dummy_get_population_word_count() -> Vec<PopulationResponse> {
         },
     ]
 }
+
+/// Return a dummy set of speeches.
+///
+/// This data is the first speech by a Green MP containing the word "pipeline".
 
 pub fn dummy_get_speeches() -> Vec<SpeechResponse> {
     vec![ SpeechResponse {

@@ -100,11 +100,6 @@ pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<S
 
 /// Returns breakdown data of the given type (party, gender, etc.) for the given word.
 ///
-/// The parameters are:
-/// - connnection: the async MySQL connection
-/// - breakdown_type: the breakdown type  
-/// - word: the word to search for
-///
 /// The return type is BreakdownResponse, which contains the id of the breakdown (e.g. party
 /// id, gender id,  etc.), the breakdown name, the breakdown colour, the sum of all times
 /// that the word is mentioned for that breakdown, and that sum adjusted to the number of
@@ -225,12 +220,6 @@ pub async fn get_population_word_count(
 }
 
 /// Returns all speeches matching the breakdown that contain the requested word.
-///
-/// The parameters are:
-/// - connnection: the async MySQL connection
-/// - breakdown_type: the breakdown type
-/// - id: the breakdown id
-/// - word: the word to search for
 ///
 /// The return type is SpeechResponse, which contains the speaker id, the text of the
 /// speech, a link to the original transcript, the start time, and the end time.

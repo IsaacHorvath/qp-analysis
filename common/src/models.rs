@@ -4,6 +4,7 @@ use std::fmt;
 use time::PrimitiveDateTime;
 use uuid::Uuid;
 
+/// The type of chart breakdown, i.e. what's on the x-axis
 #[derive(Clone, PartialEq)]
 pub enum BreakdownType {
     Party,
@@ -38,16 +39,22 @@ impl fmt::Display for BreakdownType {
     }
 }
 
+/// A request to search the transcripts for the given search word.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct DataRequest {
     pub uuid: Uuid,
     pub search: String,
 }
 
+/// A request to cancel ongoing all database queries (or speech queries,
+/// specifically) associated with the current user.
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CancelRequest {
     pub uuid: Uuid,
 }
+
+/// A speaker as stored on the frontend, consisting of a first and last name
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Speaker {
@@ -55,12 +62,16 @@ pub struct Speaker {
     pub last_name: String,
 }
 
+/// A response from the backend representing a speaker
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeakerResponse {
     pub id: i32,
     pub first_name: String,
     pub last_name: String,
 }
+
+/// A row returned from a SQL query, representing a speaker
 
 pub type SpeakerRow = (i32, String, String);
 
@@ -74,14 +85,20 @@ impl From<SpeakerRow> for SpeakerResponse {
     }
 }
 
+/// A response from the backend representing a breakdown data point
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BreakdownResponse {
     pub id: i32,
     pub name: String,
     pub colour: String,
+    /// The number of times the requested word was spoken
     pub count: i64,
+    /// The number of times the requested word was spoken per 100,000 words spoken
     pub score: f64,
 }
+
+/// A row returned from a SQL query, representing a breakdown data point
 
 pub type BreakdownRow = (i32, String, String, Option<i64>, Option<f64>);
 
@@ -95,6 +112,8 @@ pub fn to_breakdown_response(row: BreakdownRow) -> Option<BreakdownResponse> {
     })
 }
 
+/// A response from the backend representing a population density scatterplot point
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct PopulationResponse {
     pub id: i32,
@@ -105,6 +124,9 @@ pub struct PopulationResponse {
     pub count: i64,
     pub score: f32,
 }
+
+/// A row returned from a SQL query, representing a population density scatterplot
+/// point
 
 pub type PopulationRow = (i32, String, i32, f64, String, Option<i64>, Option<f64>);
 
@@ -120,6 +142,8 @@ pub fn to_population_response(row: PopulationRow) -> Option<PopulationResponse> 
     })
 }
 
+/// A response from the backend representing a speech
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeechResponse {
     pub speaker: i32,
@@ -128,6 +152,8 @@ pub struct SpeechResponse {
     pub start: PrimitiveDateTime,
     pub end: PrimitiveDateTime,
 }
+
+/// A row returned from a SQL query, representing a speech
 
 pub type SpeechRow = (i32, String, String, PrimitiveDateTime, PrimitiveDateTime);
 
