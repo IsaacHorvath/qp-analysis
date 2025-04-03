@@ -6,14 +6,16 @@ use wasm_bindgen_futures::spawn_local;
 use crate::components::plot::{Plot, PlotSource};
 use crate::components::breakdown_engine::BreakdownEngine;
 use crate::components::population_engine::PopulationEngine;
-use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
+use crate::components::speech_overlay::SpeechOverlay;
 use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
 use crate::pages::info_page_data::*;
 use crate::State;
-use crate::util::Speaker;
+use crate::util::{Speaker, OverlaySelection};
 use std::collections::HashMap;
 use std::rc::Rc;
+
+/// An info page explaining the tool, with embedded demo charts.
 
 #[function_component(InfoPage)]
 pub fn info_page() -> Html {
@@ -53,6 +55,7 @@ pub fn info_page() -> Html {
     
     if let Some(state) = use_context::<State>() {
         if state.provincial {
+            // todo finish this and move it back to its own page
             return html! {
                 <div class="info">
                     <h2>{"What is this tool?"}</h2>

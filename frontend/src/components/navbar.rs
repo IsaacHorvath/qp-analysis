@@ -6,18 +6,34 @@ use wasm_bindgen::closure::Closure;
 use web_sys::Document;
 use crate::error_page;
 
+/// A route enum containing all the routes in the app.
+
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
+    
+    /// The route to the home page, currently the info page.
+    
     #[at("/")]
     Home,
+    
+    /// The route to the main interface page.
+    
     #[at("/search")]
     Interface,
+    
+    /// The route to the about me page.
+    
     #[at("/about")]
     About,
+    
+    /// The route to the 404 not found page.
+    
     #[not_found]
     #[at("/404")]
     NotFound,
 }
+
+/// A navbar component that allows the user to visit different pages in the app.
 
 #[function_component(Navbar)]
 pub fn navbar() -> Html {

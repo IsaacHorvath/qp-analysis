@@ -3,13 +3,14 @@ use yew::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use wasm_bindgen::JsCast;
-use crate::components::speech_overlay::OverlaySelection;
-use crate::util::put;
+use crate::util::{put, OverlaySelection};
 use crate::State;
 use std::rc::Rc;
 use std::cell::RefCell;
 use yew_hooks::prelude::use_window_size;
 use std::error::Error;
+
+/// Returns the CanvasRenderingContext2d object for the given HtmlCanvasElement
 
 pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
     canvas
@@ -19,7 +20,8 @@ pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingConte
         .ok()
 }
 
-//#[derive(Debug)]
+// todo replace with anyhow
+
 pub struct PlotError;
 
 impl<E: Error> From<E> for PlotError {
@@ -28,20 +30,56 @@ impl<E: Error> From<E> for PlotError {
     }
 }
 
+/// Describes a valid plottable engine when implemented.
+
 pub trait Plottable<R>
     where R: PartialEq + std::fmt::Debug + 'static
 {
+    
+    /// Returns a new plot engine.
+    
     fn new(breakdown_type: BreakdownType) -> Self;
+    
+    /// Sets the dynamic properties for this engine. These may need to be reset on rerender.
+    
     fn set_props(&mut self, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>);
+    
+    /// Loads data into the engine.
+    
     fn load_data(&mut self, data: Rc<Vec<R>>);
+    
+    /// Whether the engine is empty of data.
+    
     fn is_empty(&self) -> bool;
+    
+    /// Returns a sane calculated width for the plot.
+    
     fn get_width(&self) -> u32;
+    
+    /// Returns a sane calculated height for the plot.
+    
     fn get_height(&self) -> u32;
+    
+    /// Returns a heading for the plot.
+    
     fn get_heading(&self) -> String;
+    
+    /// Draws the plot on the given canvas element using plotters.
+    
     fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError>;
+    
+    /// Handle a mouse hover event. If the user is hovering over a bar/point, this
+    /// means drawing an outline around it.
+    
     fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError>;
+    
+    /// Handle a mouse click event. If the user clicked on a bar/point, this means
+    /// bringing up the speech overlay for that party/riding/etc.
+    
     fn clicked(&self, e: MouseEvent) -> Result<(), PlotError>;
 }
+
+/// A source of plot data - either a uri to request data from, or a json string.
 
 #[derive(Clone, PartialEq)]
 pub enum PlotSource {
@@ -49,16 +87,47 @@ pub enum PlotSource {
     Json(String)
 }
 
+/// Properties for the plot component.
+
 #[derive(Properties, PartialEq)]
 pub struct PlotProps
 {
+    
+    /// The breakdown type of the plot. Ignored for population graphs.
+    
     pub breakdown_type: BreakdownType,
+    
+    /// The source of the plot data - a uri to request or a json string.
+    
     pub source: PlotSource,
+    
+    /// Whether the plot is currently visible.
+    
     pub visible: bool,
+    
+    /// The word that was most recently searched.
+    
     pub word: String,
+    
+    /// Whether we are showing total counts on this plot. The engine determines
+    /// how they will be displayed if this is set to true.
+    
     pub show_counts: bool,
+    
+    /// A callback to bring up the speech overlay when a bar/point is clicked on
+    /// the plot
+    
     pub get_speeches: Callback<OverlaySelection>,
 }
+
+/// A flexible plot component that can request data and create a plot engine to
+/// render it.
+///
+/// If the data request fails (or other errors occur) the plot enters a fail state
+/// and the page will need to be refreshed. If a status `204 No Content` is
+/// received, this represents a user-cancelled request, and the plot will silently
+/// remain loading, awaiting one of the two conditions that would have triggered
+/// a cancellation - destruction (the user leaving the page) or a new word.
 
 #[function_component(Plot)]
 pub fn plot<P, R>(props: &PlotProps) -> Html

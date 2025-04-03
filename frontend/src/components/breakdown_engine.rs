@@ -5,11 +5,17 @@ use yew::prelude::*;
 use web_sys::HtmlCanvasElement;
 use gloo::utils::window;
 use common::models::BreakdownResponse;
-use crate::components::speech_overlay::OverlaySelection;
+use crate::util::OverlaySelection;
 use std::cmp::{min, max};
 use crate::components::plot::{Plottable, canvas_context, PlotError};
 use common::models::BreakdownType;
 use std::rc::Rc;
+
+/// A breakdown chart coordinate mapping for interactivity.
+///
+/// The struct holds the top, left, bottom, and right edges of an interactive box
+/// (a bar on the chart, or both bars if we're showing total counts) and the id of
+/// of party/gender/etc. represented by that box.
 
 #[derive(Default, Clone)]
 struct CoordMapping {
@@ -20,18 +26,41 @@ struct CoordMapping {
     id: i32,
 }
 
+/// The main engine for a breakdown chart of some type.
+
 pub struct BreakdownEngine {
+    
+    /// The data for this chart.
+    
     data: Rc<Vec<BreakdownResponse>>,
+    
+    /// The type of breakdown.
+    
     breakdown_type: BreakdownType,
+    
+    /// The current width of the window.
+    
     window_width: f64,
+    
+    /// The device pixel ratio. This is necessary to make a sharp enough canvas on
+    /// mobile, which often uses at least two real pixels per CSS pixel.
+    
     dpr: f64,
+    
+    /// Whether we are showing total counts instead of adjusted scores.
+    
     show_counts: bool,
+    
+    /// The id of the bar we are currently hovering over.
+    
     hover_id: i32,
     coord_mappings: Vec<CoordMapping>,
     get_speeches: Option<Callback<OverlaySelection>>,
 }
 
 impl BreakdownEngine {
+    /// Returns a coordinate mapping that matches the mouse's position, if any.
+    
     fn mouse_mapping(&self, e: MouseEvent) -> CoordMapping {
         let x = (e.offset_x() as f64 * self.dpr) as i32;
         let y = (e.offset_y() as f64 * self.dpr) as i32;
@@ -45,6 +74,9 @@ impl BreakdownEngine {
 }
 
 impl Plottable<BreakdownResponse> for BreakdownEngine {
+    
+    /// Creates a new breakdown chart engine.
+    
     fn new(breakdown_type: BreakdownType) -> Self {
         BreakdownEngine {
             breakdown_type: breakdown_type.clone(),
@@ -58,19 +90,27 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         }
     }
     
+    /// Sets the dynamic properties for this engine. These may need to be reset on rerender.
+    
     fn set_props(&mut self, window_width: f64, show_counts: bool, get_speeches: Callback<OverlaySelection>) {
         self.window_width = window_width;
         self.show_counts = show_counts;
         self.get_speeches = Some(get_speeches);
     }
     
+    /// Loads data into the engine.
+    
     fn load_data(&mut self, data: Rc<Vec<BreakdownResponse>>) {
         self.data = data;
     }
     
+    /// Whether the engine is empty of data.
+    
     fn is_empty(&self) -> bool {
         self.data.as_ref().len() == 0
     }
+    
+    /// Returns a sane calculated width for the chart.
     
     fn get_width(&self) -> u32 {
         let segs = self.data.as_ref().len() as u32;
@@ -83,13 +123,19 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         }
     }
     
+    /// Returns a sane calculated height for the chart.
+    
     fn get_height(&self) -> u32 {
         500
     }
     
+    /// Returns a heading for the chart.
+    
     fn get_heading(&self) -> String {
         format!("{} breakdown", self.breakdown_type)
     }
+    
+    /// Draws the chart on the given canvas element using plotters.
     
     fn redraw(&mut self, canvas: HtmlCanvasElement, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError> {
         self.dpr = window().device_pixel_ratio().max(1.0);
@@ -187,6 +233,9 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         Ok(())
     }
     
+    /// Handle a mouse hover event. If the user is hovering over a bar, this means
+    /// drawing an outline around it.
+    
     fn hover(&mut self, e: MouseEvent, inter_canvas: HtmlCanvasElement) -> Result<(), PlotError> {
         let cm = self.mouse_mapping(e);
         
@@ -204,6 +253,9 @@ impl Plottable<BreakdownResponse> for BreakdownEngine {
         }
         Ok(())
     }
+    
+    /// Handle a mouse click event. If the user clicked on a bar, this means
+    /// bringing up the speech overlay for that party/gender/etc.
     
     fn clicked(&self, e: MouseEvent) -> Result<(), PlotError> {
         if let Some(get_speeches) = &self.get_speeches {

@@ -3,17 +3,40 @@ use time::PrimitiveDateTime;
 use time::macros::format_description;
 use regex::RegexBuilder;
 use crate::error_page;
-//use log::info;
+
+/// Properties for the speech box component.
 
 #[derive(Properties, PartialEq)]
 pub struct SpeechBoxProps {
+    
+    /// The full name of the individual who delivered this speech.
+    
     pub name: String,
+    
+    /// The start time of the speech.
+    
     pub start: PrimitiveDateTime,
+    
+    /// The end time of the speech.
+    
     pub end: PrimitiveDateTime,
+    
+    /// A link to the Hansard transcript of the speech.
+    
     pub link: String,
+    
+    /// The text of the speech.
+    
     pub text: String,
+    
+    /// The word that was searched to bring up this speech, which should be
+    /// highlighted.
+    
     pub word: String,
 }
+
+/// A speech box component displaying one speech, with the time, date, speaker, and
+/// a link to the original Hansard trascript.
 
 #[function_component(SpeechBox)]
 pub fn speech_box(props: &SpeechBoxProps) -> Html {

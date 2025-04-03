@@ -1,5 +1,8 @@
 use yew::prelude::*;
 
+/// A basic error page, to be displayed in extreme cases when we might not even
+/// have the router.
+
 pub fn error_page() -> Html {
     html! {
         <div style="text-align: center">

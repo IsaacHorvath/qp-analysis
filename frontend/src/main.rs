@@ -1,3 +1,9 @@
+//! The frontend package for the house words app.
+//!
+//! A single-page yew wasm app providing a basic interface to search transcripts of
+//! the House of Commons (and the Ontario legislature) and generate graphs based on
+//! the usage of the search word or phrase. Also provides an info and about page.
+
 use yew::prelude::*;
 use yew_router::prelude::*;
 use components::navbar::*;
@@ -11,11 +17,22 @@ mod pages;
 mod components;
 mod util;
 
+/// A struct to store global frontend state. This is provided to all components in
+/// the app via yew's context system.
+
 #[derive(Clone, Debug, PartialEq)]
 struct State {
+    
+    /// A unique user id, generated on page load. This is so we can cancel queries.
+    
     uuid: Uuid,
+    
+    /// A bool to indicate whether we are running the federal or Ontario version.
+    
     provincial: bool,
 }
+
+/// The router function, matching the route enum to a page.
 
 fn switch(routes: Route) -> Html {
     match routes {
@@ -34,6 +51,8 @@ fn switch(routes: Route) -> Html {
     }
 }
 
+/// A simple not found page with a link back to the home page.
+
 #[function_component(NotFoundPage)]
 fn not_found_page() -> Html {
     let Some(navigator) = use_navigator() else {return error_page()};
@@ -50,6 +69,8 @@ fn not_found_page() -> Html {
         </div>
     }
 }
+
+/// Our main frontend app.
 
 #[function_component(App)]
 fn app() -> Html {
@@ -71,6 +92,8 @@ fn app() -> Html {
         </ContextProvider<State>>
     }
 }
+
+/// Our main entry point. Short and sweet!
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));

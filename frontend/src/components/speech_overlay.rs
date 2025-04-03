@@ -8,22 +8,35 @@ use yew::prelude::*;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-//todo move to new utils file
-#[derive(PartialEq, Clone)]
-pub struct OverlaySelection {
-    pub breakdown_type: BreakdownType,
-    pub id: i32,
-    pub heading: String,
-}
+/// Properties for the speech overlay component.
 
 #[derive(Properties, PartialEq)]
 pub struct SpeechOverlayProps {
+    
+    /// The current selected speech overlay, set by a plot.
+    
     pub selection: OverlaySelection,
+    
+    /// The word the user searched for, to be highlighted.
+    
     pub word: String,
+    
+    /// Whether the overlay is currently visible.
+    
     pub visible: bool,
+    
+    /// A callback for the parent page to hide the overlay.
+    
     pub hide: Callback<MouseEvent>,
+    
+    /// A reference to a store of a set of speakers.
+    
     pub speakers: Rc<HashMap<i32, Speaker>>,
 }
+
+/// A speech overlay component, displaying a requested set of speeches.
+///
+/// This overlay mostly hides the page below.
 
 #[function_component(SpeechOverlay)]
 pub fn speech_overlay(props: &SpeechOverlayProps) -> Html {

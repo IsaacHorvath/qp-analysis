@@ -2,6 +2,10 @@ use common::models::SpeechResponse;
 use time::PrimitiveDateTime;
 use time::macros::{date, time};
 
+// todo move this all to the backend
+
+/// Returns demo party breakdown data in json format for the word "pipeline".
+
 pub fn pipeline_party_data() -> String {
     r#"[
         {"id":1,"name":"Liberal","colour":"EA6D6A","count":175,"score":2.192533},
@@ -13,6 +17,8 @@ pub fn pipeline_party_data() -> String {
     ]"#.to_string()
 }
 
+/// Returns a demo speech in json format.
+
 pub fn speech_data() -> SpeechResponse {
     SpeechResponse {
         speaker: 218,
@@ -23,6 +29,9 @@ pub fn speech_data() -> SpeechResponse {
     }
 }
 
+/// Returns demo gender breakdown data in json format for the phrase "mental
+/// health".
+
 pub fn mental_gender_data() -> String {
     r#"[
         {"id":1,"name":"female","colour":"F4F462","count":1900,"score":28.98253},
@@ -30,6 +39,8 @@ pub fn mental_gender_data() -> String {
         {"id":3,"name":"two-spirit","colour":"AB62F4","count":22,"score":16.175756}
     ]"#.to_string()
 }
+
+/// Returns demo province breakdown data in json format for the word "trump".
 
 pub fn trump_province_data() -> String {
     r#"[
@@ -45,6 +56,8 @@ pub fn trump_province_data() -> String {
     ]"#.to_string()
 }
 
+/// Returns demo speaker breakdown data for the word "pharmacare".
+
 pub fn pharma_speaker_data() -> String {
     r#"[
         {"id":242,"name":"Yasir Naqvi","colour":"EA6D6A","count":53,"score":95.425},
@@ -59,6 +72,8 @@ pub fn pharma_speaker_data() -> String {
         {"id":293,"name":"Sonia Sidhu","colour":"EA6D6A","count":9,"score":41.430744}
     ]"#.to_string()
 }
+
+/// Returns demo population density data for the word "gaza".
 
 pub fn gaza_pop_data() -> String {
     r#"[

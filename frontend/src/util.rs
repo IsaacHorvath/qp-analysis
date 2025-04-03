@@ -1,6 +1,9 @@
+use common::models::BreakdownType;
 use gloo_net::http::{Request, Response};
 use anyhow::bail;
 use anyhow::Result;
+
+// todo think about moving structs to a models file
 
 /// A speaker as it is stored on the frontend.
 
@@ -8,6 +11,16 @@ use anyhow::Result;
 pub struct Speaker {
     pub first_name: String,
     pub last_name: String,
+}
+
+/// An overlay selection, used to determine what set of speeches we are looking at
+/// in the speech overlay.
+
+#[derive(PartialEq, Clone)]
+pub struct OverlaySelection {
+    pub breakdown_type: BreakdownType,
+    pub id: i32,
+    pub heading: String,
 }
 
 /// Put a request to the given uri.

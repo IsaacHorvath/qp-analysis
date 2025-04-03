@@ -4,12 +4,17 @@ use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
-use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
+use crate::components::speech_overlay::SpeechOverlay;
 use crate::pages::error_page::error_page;
 use crate::State;
 use crate::util::*;
 use std::collections::HashMap;
 use std::rc::Rc;
+
+/// The main interface page for this tool.
+///
+/// This page controls which charts are visible, sends search words to visible
+/// charts, and hosts the speech overlay when it is clicked.
 
 #[function_component(InterfacePage)]
 pub fn interface_page() -> Html {
@@ -183,7 +188,6 @@ pub fn interface_page() -> Html {
             
             if !*failed {
                 <Charts
-                    {provincial}
                     word={(*word).clone()}
                     show_counts={*show_counts}
                     show_party={*show_party}

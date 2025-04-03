@@ -54,7 +54,7 @@ pub struct CancelRequest {
     pub uuid: Uuid,
 }
 
-/// A response from the backend representing a speaker
+/// A response from the backend representing a speaker.
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeakerResponse {
@@ -63,7 +63,7 @@ pub struct SpeakerResponse {
     pub last_name: String,
 }
 
-/// A row returned from a SQL query, representing a speaker
+/// A row returned from a SQL query, representing a speaker.
 
 pub type SpeakerRow = (i32, String, String);
 
@@ -77,16 +77,16 @@ impl From<SpeakerRow> for SpeakerResponse {
     }
 }
 
-/// A response from the backend representing a breakdown data point
+/// A response from the backend representing a breakdown data point.
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BreakdownResponse {
     pub id: i32,
     pub name: String,
     pub colour: String,
-    /// The number of times the requested word was spoken
+    /// The number of times the requested word was spoken.
     pub count: i64,
-    /// The number of times the requested word was spoken per 100,000 words spoken
+    /// The number of times the requested word was spoken per 100,000 words spoken.
     pub score: f64,
 }
 
@@ -104,7 +104,7 @@ pub fn to_breakdown_response(row: BreakdownRow) -> Option<BreakdownResponse> {
     })
 }
 
-/// A response from the backend representing a population density scatterplot point
+/// A response from the backend representing a population density scatterplot point.
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct PopulationResponse {
@@ -118,7 +118,7 @@ pub struct PopulationResponse {
 }
 
 /// A row returned from a SQL query, representing a population density scatterplot
-/// point
+/// point.
 
 pub type PopulationRow = (i32, String, i32, f64, String, Option<i64>, Option<f64>);
 
@@ -134,7 +134,7 @@ pub fn to_population_response(row: PopulationRow) -> Option<PopulationResponse> 
     })
 }
 
-/// A response from the backend representing a speech
+/// A response from the backend representing a speech.
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SpeechResponse {
@@ -145,7 +145,7 @@ pub struct SpeechResponse {
     pub end: PrimitiveDateTime,
 }
 
-/// A row returned from a SQL query, representing a speech
+/// A row returned from a SQL query, representing a speech.
 
 pub type SpeechRow = (i32, String, String, PrimitiveDateTime, PrimitiveDateTime);
 

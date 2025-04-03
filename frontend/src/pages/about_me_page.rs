@@ -1,5 +1,7 @@
 use yew::prelude::*;
 
+/// A simple page giving details about me.
+
 #[function_component(AboutMePage)]
 pub fn about_me_page() -> Html {
     html! {
