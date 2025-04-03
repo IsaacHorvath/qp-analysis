@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use common::models::{Speaker, BreakdownType, SpeakerResponse, BreakdownResponse, PopulationResponse};
+use common::models::{BreakdownType, SpeakerResponse, BreakdownResponse, PopulationResponse};
 use gloo::utils::body;
 use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
@@ -11,6 +11,7 @@ use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
 use crate::pages::info_page_data::*;
 use crate::State;
+use crate::util::Speaker;
 use std::collections::HashMap;
 use std::rc::Rc;
 

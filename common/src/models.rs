@@ -54,14 +54,6 @@ pub struct CancelRequest {
     pub uuid: Uuid,
 }
 
-/// A speaker as stored on the frontend, consisting of a first and last name
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct Speaker {
-    pub first_name: String,
-    pub last_name: String,
-}
-
 /// A response from the backend representing a speaker
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]

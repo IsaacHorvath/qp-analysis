@@ -1,4 +1,4 @@
-use common::models::{BreakdownType, CancelRequest, Speaker, SpeakerResponse};
+use common::models::{BreakdownType, CancelRequest, SpeakerResponse};
 use yew::prelude::*;
 use gloo::utils::body;
 use gloo_net::http::Request;
@@ -7,7 +7,7 @@ use crate::components::charts::Charts;
 use crate::components::speech_overlay::{SpeechOverlay, OverlaySelection};
 use crate::pages::error_page::error_page;
 use crate::State;
-use crate::util::put;
+use crate::util::*;
 use std::collections::HashMap;
 use std::rc::Rc;
 

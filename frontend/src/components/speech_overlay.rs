@@ -1,8 +1,8 @@
-use common::models::{BreakdownType, DataRequest, CancelRequest, SpeechResponse, Speaker};
+use common::models::{BreakdownType, DataRequest, CancelRequest, SpeechResponse};
 use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
 use crate::State;
-use crate::util::put;
+use crate::util::*;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use std::collections::HashMap;
