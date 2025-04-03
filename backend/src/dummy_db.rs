@@ -1,36 +1,9 @@
-use crate::error::AppError;
 use common::models::*;
-use diesel_async::{
-    pooled_connection::{bb8::Pool, AsyncDieselConnectionManager},
-    AsyncMysqlConnection,
-};
-use dotenvy::dotenv;
-use std::env;
 use time::macros::{date, time};
 use time::PrimitiveDateTime;
 
-pub async fn get_connection_pool() -> Pool<AsyncMysqlConnection> {
-    dotenv().ok();
-
-    let database_url = format!(
-        "{}{}",
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set"),
-        env::var("DATA_SOURCE").expect("DATA_SOURCE must be set")
-    );
-    let manager = AsyncDieselConnectionManager::<AsyncMysqlConnection>::new(database_url);
-
-    Pool::builder()
-        .max_size(50) // todo find a sane default number here
-        .min_idle(Some(10)) // todo same
-        .build(manager)
-        .await
-        .expect("Could not build connection pool")
-}
-
-pub async fn get_speakers(
-    _connection: &mut AsyncMysqlConnection,
-) -> Result<Vec<SpeakerResponse>, AppError> {
-    Ok(vec![
+pub fn dummy_get_speakers() -> Vec<SpeakerResponse> {
+    vec![
         SpeakerResponse {
             id: 1,
             first_name: "Ziad".to_string(),
@@ -1811,15 +1784,11 @@ pub async fn get_speakers(
             first_name: "Kristian".to_string(),
             last_name: "Firth".to_string(),
         },
-    ])
+    ]
 }
 
-pub async fn get_breakdown_word_count(
-    _connection: &mut AsyncMysqlConnection,
-    breakdown_type: BreakdownType,
-    _word: &str,
-) -> Result<Vec<BreakdownResponse>, AppError> {
-    Ok(match breakdown_type {
+pub fn dummy_get_breakdown_word_count(breakdown_type: BreakdownType) -> Vec<BreakdownResponse> {
+    match breakdown_type {
         BreakdownType::Party => vec![
             BreakdownResponse {
                 id: 1,
@@ -2024,14 +1993,11 @@ pub async fn get_breakdown_word_count(
                 score: 41.430744,
             },
         ],
-    })
+    }
 }
 
-pub async fn get_population_word_count(
-    _connection: &mut AsyncMysqlConnection,
-    _word: &str,
-) -> Result<Vec<PopulationResponse>, AppError> {
-    Ok(vec![
+pub fn dummy_get_population_word_count() -> Vec<PopulationResponse> {
+    vec![
         PopulationResponse {
             id: 1,
             name: "Edmonton Manning".to_string(),
@@ -5155,20 +5121,15 @@ pub async fn get_population_word_count(
             count: 5,
             score: 20.920504,
         },
-    ])
+    ]
 }
 
-pub async fn get_speeches(
-    _connection: &mut AsyncMysqlConnection,
-    _breakdown_type: BreakdownType,
-    _id: i32,
-    _word: &str,
-) -> Result<Vec<SpeechResponse>, AppError> {
-    Ok(vec![ SpeechResponse {
+pub fn dummy_get_speeches() -> Vec<SpeechResponse> {
+    vec![ SpeechResponse {
         speaker: 218,
         text: "Mr. Speaker, I am honoured to present a petition regarding the Trans Mountain pipeline. It is of critical concern to the petitioners that the Trans Mountain pipeline expansion not take place. They point out that a diluted bitumen spill would devastate local ecosystems and economies throughout British Columbia, but particularly in the coastal zone and anywhere along the 800 water bodies, tributaries and rivers the pipeline would cross. The petitioners call on the government to cancel any plans to put public money into, or to approve any expansion of, the Trans Mountain pipeline.".to_string(),
         link: "https://www.ourcommons.ca/documentviewer/en/44-1/house/sitting-3/hansard".to_string(),
         start: PrimitiveDateTime::new(date!(2021-11-24), time!(15:30)),
         end: PrimitiveDateTime::new(date!(2021-11-24), time!(15:30)),
-    }])
+    }]
 }

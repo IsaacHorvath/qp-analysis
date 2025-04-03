@@ -1,4 +1,11 @@
+//! The backend package for the house words app.
+//!
+//! Serves the frontend wasm binary, and provides api routes that return the results
+//! of SQL queries on an external MariaDB instance.
+
+#![warn(missing_docs)]
 use crate::db::*;
+use crate::dummy_db::*;
 use crate::error::AppError;
 use crate::reaper::reaper;
 use axum::{
@@ -21,10 +28,10 @@ use tower_http::trace::TraceLayer;
 use crate::reaper::Message;
 
 mod db;
+mod dummy_db;
 mod error;
 mod reaper;
 
-// todo use clap for dev dummy db
 #[derive(Parser, Debug)]
 #[clap(name = "backend", about = "queens park analysis backend")]
 struct Opt {
@@ -39,19 +46,30 @@ struct Opt {
 
     #[clap(long = "static-dir", default_value = "./dist")]
     static_dir: String,
+
+    #[clap(short, long, default_value_t = false)]
+    dummy: bool,
 }
+
+/// A struct to store the global backend state (database connection pool and mpsc
+/// channel sender).
 
 #[derive(Clone)]
 struct AppState {
-    connection_pool: Pool<AsyncMysqlConnection>,
+    /// The connection pool for the app. If None, we are in dummy mode and pulling
+    /// hardcoded demo data. If Some, the pool will retain 10 idle connections and
+    /// will open at max 50 connections.
+    connection_pool: Option<Pool<AsyncMysqlConnection>>,
+    
+    /// A sender to send registration and kill messages to the reaper.
     sender: Sender<Message>,
 }
 
 /// The main backend function.
 ///
-/// This function parses the command line arguments; sets
-/// up the state, the reaper, and its message channel; configures all the routes and
-/// the tracing middleware; sets up the listener and serves it via axum.
+/// This function parses the command line arguments; sets up the state, the reaper,
+/// and its message channel; configures all the routes and the tracing middleware;
+/// sets up the listener and serves it via axum.
 
 #[tokio::main]
 async fn main() {
@@ -64,13 +82,13 @@ async fn main() {
     let (sender, mut receiver) = mpsc::channel(50);
 
     let state = AppState {
-        connection_pool: get_connection_pool().await,
+        connection_pool: if opt.dummy {None} else {Some(get_connection_pool().await)},
         sender,
     };
     
-    {
+    if !opt.dummy {
         let state = state.clone();
-        tokio::spawn(async move { reaper(state.connection_pool, &mut receiver).await; });
+        tokio::spawn(async move { reaper(state.connection_pool.unwrap(), &mut receiver).await; });
     }
 
     tracing_subscriber::fmt::init();
@@ -100,8 +118,6 @@ async fn main() {
         port,
     ));
 
-    log::info!("listening on http://{}", sock_addr);
-
     let listener = tokio::net::TcpListener::bind(&sock_addr)
         .await
         .expect("unable to bind listener");
@@ -113,8 +129,12 @@ async fn main() {
 /// Return all speakers in the database.
 
 async fn speakers(State(state): State<AppState>) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
-    let mut conn = state.connection_pool.get().await?;
-    Ok(Json(get_speakers(&mut conn).await?))
+    if let Some(pool) = state.connection_pool {
+        let mut conn = pool.get().await?;
+        Ok(Json(get_speakers(&mut conn).await?))
+    } else {
+        Ok(Json(dummy_get_speakers()))
+    }
 }
 
 /// Return all speeches matching the given word and breakdown type. See db call for
@@ -129,37 +149,41 @@ async fn breakdown(
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<BreakdownResponse>>, AppError> {
     
-    let mut conn = state.connection_pool.get().await?;
-    let conn_id = get_connection_id(&mut conn).await?;
-    
-    let token = CancellationToken::new();
-    
-    state.sender.send(Message::Register((
-        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
-        token.clone()
-    ))).await?;
-    
-    let search = payload.search.to_lowercase().replace(
-        |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-        "",
-    );
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-    
-    let response = tokio::select! {
-        res = get_breakdown_word_count(&mut conn, breakdown_type, &search) => {
-            Ok(Json(res?))
-        }
-        _ = token.cancelled() => {
-            Err(AppError::Cancelled)
-        }
-    };
-    
-    // todo don't send this if we cancelled anyway
-    state.sender.send(Message::Deregister(
-        ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
-    )).await?;
-    
-    response
+    if let Some(pool) = state.connection_pool {
+        let mut conn = pool.get().await?;
+        let conn_id = get_connection_id(&mut conn).await?;
+        
+        let token = CancellationToken::new();
+        
+        state.sender.send(Message::Register((
+            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
+            token.clone()
+        ))).await?;
+        
+        let search = payload.search.to_lowercase().replace(
+            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
+            "",
+        );
+        
+        let response = tokio::select! {
+            res = get_breakdown_word_count(&mut conn, breakdown_type, &search) => {
+                Ok(Json(res?))
+            }
+            _ = token.cancelled() => {
+                Err(AppError::Cancelled)
+            }
+        };
+        
+        // todo don't send this if we cancelled anyway
+        state.sender.send(Message::Deregister(
+            ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
+        )).await?;
+        
+        response
+    } else {
+        Ok(Json(dummy_get_breakdown_word_count(breakdown_type)))
+    }
 }
 
 /// Return population data matching the given word. See db call for description of
@@ -173,41 +197,45 @@ async fn population(
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<PopulationResponse>>, AppError> {
     
-    let mut conn = state.connection_pool.get().await?;
-    let conn_id = get_connection_id(&mut conn).await?;
-    
-    let token = CancellationToken::new();
-    
-    state.sender.send(Message::Register((
-        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
-        token.clone()
-    ))).await?;
-    
-    let search = payload.search.to_lowercase().replace(
-        |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-        "",
-    );
-    
-    let response = tokio::select! {
-        res = get_population_word_count(&mut conn, &search) => {
-            Ok(Json(res?))
-        }
-        _ = token.cancelled() => {
-            Err(AppError::Cancelled)
-        }
-    };
-    
-    state.sender.send(Message::Deregister(
-        ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
-    )).await?;
-    
-    response
+    if let Some(pool) = state.connection_pool {
+        let mut conn = pool.get().await?;
+        let conn_id = get_connection_id(&mut conn).await?;
+        
+        let token = CancellationToken::new();
+        
+        state.sender.send(Message::Register((
+            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
+            token.clone()
+        ))).await?;
+        
+        let search = payload.search.to_lowercase().replace(
+            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
+            "",
+        );
+        
+        let response = tokio::select! {
+            res = get_population_word_count(&mut conn, &search) => {
+                Ok(Json(res?))
+            }
+            _ = token.cancelled() => {
+                Err(AppError::Cancelled)
+            }
+        };
+        
+        state.sender.send(Message::Deregister(
+            ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
+        )).await?;
+        
+        response
+    } else {
+        Ok(Json(dummy_get_population_word_count()))
+    }
 }
 
 /// Return all speeches matching the given word, breakdown type, and id. See db call
 /// for description of return columns.
 ///
-/// This handler registers a cancellation token with the reaper, and will return\
+/// This handler registers a cancellation token with the reaper, and will return
 /// status 204 if cancelled.
 
 async fn speeches(
@@ -216,36 +244,40 @@ async fn speeches(
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<SpeechResponse>>, AppError> {
     
-    let mut conn = state.connection_pool.get().await?;
-    let conn_id = get_connection_id(&mut conn).await?;
-    
-    let token = CancellationToken::new();
-    
-    state.sender.send(Message::Register((
-        ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: true },
-        token.clone()
-    ))).await?;
-    
-    let search = payload.search.to_lowercase().replace(
-        |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-        "",
-    );
-    let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-    
-    let response = tokio::select! {
-        res = get_speeches(&mut conn, breakdown_type, id, &search) => {
-            Ok(Json(res?))
-        }
-        _ = token.cancelled() => {
-            Err(AppError::Cancelled)
-        }
-    };
-    
-    state.sender.send(Message::Deregister(
-        ActiveQuery { uuid: payload.uuid, conn_id, speech: true }
-    )).await?;
+    if let Some(pool) = state.connection_pool {
+        let mut conn = pool.get().await?;
+        let conn_id = get_connection_id(&mut conn).await?;
+        
+        let token = CancellationToken::new();
+        
+        state.sender.send(Message::Register((
+            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: true },
+            token.clone()
+        ))).await?;
+        
+        let search = payload.search.to_lowercase().replace(
+            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
+            "",
+        );
+        let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
+        
+        let response = tokio::select! {
+            res = get_speeches(&mut conn, breakdown_type, id, &search) => {
+                Ok(Json(res?))
+            }
+            _ = token.cancelled() => {
+                Err(AppError::Cancelled)
+            }
+        };
+        
+        state.sender.send(Message::Deregister(
+            ActiveQuery { uuid: payload.uuid, conn_id, speech: true }
+        )).await?;
 
-    response
+        response
+    } else {
+        return Ok(Json(dummy_get_speeches()))
+    }
 }
 
 /// Cancel all current requests associated with the uuid in the payload.

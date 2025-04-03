@@ -37,7 +37,10 @@ struct ConnectionId {
     id: i32
 }
 
-/// Returns an initialized bb8 connection pool for the database.
+/// Returns an initialized bb8 async connection pool for the database.
+///
+/// The connection pool will retain 10 idle connections and will open at max
+/// 50 connections.
 ///
 /// Panics on error, since there's no point in trying to run without database
 /// connections.

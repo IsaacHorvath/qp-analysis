@@ -2,7 +2,7 @@
 A web tool to generate graphs of word usage by Canadian MPs and Ontario MPPs. Check out the federal version hosted [here](https://housewords.chunkerbunker.cc/) and the Ontario version [here](https://queens-park.chunkerbunker.cc/).
 
 ## Installation
-Unfortunately, there will be no way to install a *working* version of this tool yourself until I provide the data I have scraped, or the scrapers I used to generate the data. For now, here are the steps to get the backend and frontend up. The backend will simply return an internal server error when it tries to query the database.
+Unfortunately, there will be no way to install a *working* version of this tool yourself until I provide the data I have scraped, or the scrapers I used to generate the data. For now, here are the steps to get the backend and frontend up. Running the tool using the dev script will return dummy data by default.
 
 These steps assume you have working and up to date rustup and cargo installations on some flavour of Linux.
 
@@ -31,20 +31,20 @@ echo "DATABASE_URL=mysql://{username}:{password}@localhost/" > .env
 
 ## Running
 
-### Dev
+### Development
 Run the dev script in the main repository.
 
 ```sh
 ./dev.sh
 ```
 
-This script will build and run the backend, configuring it to listen on port `8081`. Then it will serve the frontend with trunk on port `8080`, proxying the api requests through to the backend. This allows for a reasonable hot reload when making changes to the frontend.
+This script will build and run the backend, configuring it to listen on port `8081`. Then it will serve the frontend with trunk on port `8080`, proxying the api requests through to the backend. This allows for a reasonably fast hot reload when making changes to the frontend.
 
-The script sets the environmental variable `DATA_SOURCE=federal_house` by default, which will attempt to a database of that name on a local MySQL or MariaDB server.
+The dev script sets the environmental variable `DATA_SOURCE=federal_house` by default, which will attempt to a database of that name on a local MySQL or MariaDB server. The dev script also sets the `--dummy` command line flag by default, which tells the backend to return some hard-coded dummy data instead of running SQL queries. This is useful when you don't have the production data or need to test frontend changes quickly.
 
 Connect to `127.0.0.1:8080` in your browser to use the tool, or connect to `localhost:8080` to run the Ontario version.
 
-### Prod
+### Production
 There is a simple prod script you can run that will compile both the frontend and backend in release mode and server the former's wasm binary via the latter.
 
 ```sh
@@ -89,7 +89,7 @@ Documentation is ongoing for this project. The Rust ecosystem has a secure found
 The backend for this project is relatively simple. Database calls are constructed using diesel, and the axum state holds onto a bb8 connection pool that allows each request handler to easily fire up a new connection. The most complicated part of the process is the reaper, which runs as an asynchronous loop waiting for messages from handlers. Each handler registers an active query with the reaper for the duration of its database request, and if a cancel message is received from the frontend for a particular user, all queries registered that user are cancelled.
 
 ### Frontend
-The frontend is a single-page yew app. Pages are contained in the /pages folder, and everything more modular than that (including the navbar) is in the /components folder. The main interface page controls whether various charts are visible, and visible charts send queries to the backend when submits a new word. New word submissions trigger cancellation requests to the backend, and the speech overlay (which appears when clicking on a particular breakdown bar or population point) sends its own requests and has its own cancellation call. The info page bundles its own data (for now) but is able to bring up a speech overlay for its demo graphs.
+The frontend is a single-page yew app. Pages are contained in the /pages folder, and everything more modular than that (including the navbar) is in the /components folder. The main interface page controls whether various charts are visible, and visible charts send queries to the backend when submits a new word. New word submissions trigger cancellation requests to the backend. The speech overlay (which appears when clicking on a particular breakdown bar or population point) sends its own requests and has its own cancellation call. The info page bundles its own data (for now) but is able to bring up a speech overlay for its demo graphs.
 
 Charts are rendered using the CanvasBackend in plotters, which can render to a canvas element in yew via the `use_node_ref()` hook. Eventually, an SVG plotting library could open the door to much more sophisticated interactivity, but at this simple level (one hover function and one click function for each graph) the canvas element works well enough and keeps the DOM much smaller.
 
@@ -99,6 +99,7 @@ Charts are rendered using the CanvasBackend in plotters, which can render to a c
 - [x] Transaction cancelling
 - [x] Github readme
 - [ ] Code comments and documentation
+- [ ] Cancel on component destruction
 - [ ] Ontario info page
 - [ ] Ontario population scatter plot
 - [ ] Time series selection
