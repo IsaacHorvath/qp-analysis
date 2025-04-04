@@ -23,7 +23,8 @@ use tokio::sync::{mpsc, mpsc::Sender};
 use tokio_util::sync::CancellationToken;
 use tower::ServiceBuilder;
 use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+use tracing_subscriber::EnvFilter;
 use crate::reaper::Message;
 
 mod db;
@@ -46,6 +47,9 @@ struct Opt {
     #[clap(long = "static-dir", default_value = "./dist")]
     static_dir: String,
 
+    #[clap(long = "log-dir", default_value = "./logs")]
+    log_dir: String,
+
     #[clap(short, long, default_value_t = false)]
     dummy: bool,
 }
@@ -55,12 +59,15 @@ struct Opt {
 
 #[derive(Clone)]
 struct AppState {
+    
     /// The connection pool for the app. If None, we are in dummy mode and pulling
     /// hardcoded demo data. If Some, the pool will retain 10 idle connections and
     /// will open at max 50 connections.
+    
     connection_pool: Option<Pool<AsyncMysqlConnection>>,
     
     /// A sender to send registration and kill messages to the reaper.
+    
     sender: Sender<Message>,
 }
 
@@ -75,7 +82,7 @@ async fn main() {
     let opt = Opt::parse();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", format!("{},hyper=info,mio=info", opt.log_level))
+        std::env::set_var("RUST_LOG", opt.log_level)
     }
     
     let (sender, mut receiver) = mpsc::channel(50);
@@ -89,8 +96,28 @@ async fn main() {
         let state = state.clone();
         tokio::spawn(async move { reaper(state.connection_pool.unwrap(), &mut receiver).await; });
     }
+    
+    let file_appender = tracing_appender::rolling::hourly(opt.log_dir, "prefix.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+            .expect("couldn't form tracing filter settings")
+        )
+        .json()
+        .with_writer(non_blocking)
+        .init();
+        
+    let service = ServiceBuilder::new()
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(
+                    DefaultMakeSpan::new().include_headers(true)
+                )
+        );
+    
+        
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
         .route("/api/speakers", get(speakers))
@@ -103,7 +130,7 @@ async fn main() {
         .fallback_service(
             ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)),
         )
-        .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
+        .layer(service);
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {

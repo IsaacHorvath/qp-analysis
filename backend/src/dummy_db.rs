@@ -2,7 +2,7 @@ use common::models::*;
 use time::macros::{date, time};
 use time::PrimitiveDateTime;
 
-/// Return a dummy set of speakers.
+/// Return a dummy set of speakers, mosly federal MPs.
 ///
 /// This list happens to be mostly complete and accurate.
 
