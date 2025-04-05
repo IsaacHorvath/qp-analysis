@@ -19,9 +19,12 @@ use reaper::ActiveQuery;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
+
 use tokio::sync::{mpsc, mpsc::Sender};
+use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::ServiceBuilder;
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::EnvFilter;
@@ -101,10 +104,7 @@ async fn main() {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env()
-            .expect("couldn't form tracing filter settings")
-        )
+        .with_env_filter(EnvFilter::from_default_env())
         .json()
         .with_writer(non_blocking)
         .init();
@@ -116,6 +116,24 @@ async fn main() {
                     DefaultMakeSpan::new().include_headers(true)
                 )
         );
+    
+    let governor_conf = std::sync::Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(1)
+            .burst_size(5)
+            .finish()
+            .expect("couldn't build rate limit governor"),
+    );
+
+    let governor_limiter = governor_conf.limiter().clone();
+    let interval = tokio::time::Duration::from_secs(60);
+    tokio::spawn(async move {
+        loop {
+            sleep(interval).await;
+            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
+        }
+    });
     
         
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
@@ -130,7 +148,11 @@ async fn main() {
         .fallback_service(
             ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)),
         )
-        .layer(service);
+        .layer(service)
+        .layer(GovernorLayer {
+           config: governor_conf,
+        })
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {
@@ -147,6 +169,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&sock_addr)
         .await
         .expect("unable to bind listener");
+        
     axum::serve(listener, app)
         .await
         .expect("Unable to start server");
