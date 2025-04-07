@@ -129,7 +129,7 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             sleep(interval).await;
-            tracing::info!("rate limiting storage size: {}", governor_limiter.len());
+            tracing::trace!("rate limiting storage size: {}", governor_limiter.len());
             governor_limiter.retain_recent();
         }
     });
@@ -149,7 +149,8 @@ async fn main() {
         .layer(service)
         .layer(GovernorLayer {
             config: governor_conf,
-        });
+        })
+        .into_make_service();
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {

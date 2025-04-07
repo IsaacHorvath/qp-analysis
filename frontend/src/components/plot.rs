@@ -10,16 +10,6 @@ use std::cell::RefCell;
 use yew_hooks::prelude::use_window_size;
 use std::error::Error;
 
-/// Returns the CanvasRenderingContext2d object for the given HtmlCanvasElement
-
-pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
-    canvas
-        .get_context("2d")
-        .ok()??
-        .dyn_into::<CanvasRenderingContext2d>()
-        .ok()
-}
-
 // todo replace with anyhow
 
 pub struct PlotError;
@@ -120,6 +110,26 @@ pub struct PlotProps
     pub get_speeches: Callback<OverlaySelection>,
 }
 
+/// A fail state the plot can be in: one of generic, too many requests, or busy.
+
+#[derive(Clone, Copy, PartialEq)]
+enum FailState {
+    Generic,
+    TooMany,
+    Busy,
+}
+use FailState::*;
+
+/// A state the plot can be in: one of showing, loading, and several failure states.
+
+#[derive(PartialEq)]
+enum PlotState {
+    Showing,
+    Loading,
+    Failed(FailState),
+}
+use PlotState::*;
+
 /// A flexible plot component that can request data and create a plot engine to
 /// render it.
 ///
@@ -135,19 +145,18 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         P: Plottable<R> + 'static,
         R: PartialEq + std::fmt::Debug + for<'a> serde::de::Deserialize<'a> + 'static
 {
-    let failed = use_state(|| false);
+    let state = use_state(|| Showing);
     let data_state: UseStateHandle<Option<Rc<Vec<R>>>> = use_state(||
         if let PlotSource::Json(json) = &props.source {
             if let Ok(data) = serde_json::from_str::<Vec<R>>(json) {
                 Some(Rc::from(data))
             } else {
-                failed.set(true);
+                state.set(Failed(Generic));
                 None
             }
         }
         else {None}
     );
-    let loading = use_state(|| false);
     let word_state = use_state(|| "".to_string());
     let canvas = use_node_ref();
     let inter_canvas = use_node_ref();
@@ -159,7 +168,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         eng.set_props(window_width.0, props.show_counts, props.get_speeches.clone());
         eng.get_heading()
     } else {
-        failed.set(true);
+        state.set(Failed(Generic));
         "".to_string()
     };
     
@@ -168,8 +177,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
         let app_state = app_state.clone();
         let visible = props.visible.clone();
         let data_state = data_state.clone();
-        let loading = loading.clone();
-        let failed = failed.clone();
+        let state = state.clone();
         let word = props.word.clone();
         let source = props.source.clone();
         let canvas = canvas.clone();
@@ -178,35 +186,37 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             if let Ok(mut eng) = engine.try_borrow_mut() {
                 if !eng.is_empty() {
                     if let (Some(canvas), Some(inter_canvas)) = (canvas.cast(), inter_canvas.cast()) {
-                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { failed.set(true); });
+                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { state.set(Failed(Generic)); });
                     }
                 }
             }
             
             if let PlotSource::Uri(uri) = source {
                 if *word_state != word && visible {
-                    failed.set(false);
-                    loading.set(true);
+                    state.set(Loading);
                     word_state.set(word.clone());
-                    let failed = failed.clone();
                     spawn_local(async move {
-                        let Some(state) = app_state
-                            else { loading.set(false); failed.set(true); return };
-                        let breakdown_request = DataRequest { uuid: state.uuid, search: word };
+                        let Some(app_state) = app_state
+                            else { state.set(Failed(Generic)); return };
+                        let breakdown_request = DataRequest { uuid: app_state.uuid, search: word };
                         let Ok(resp) = put(&format!("api/{}", uri), breakdown_request).await
-                            else { loading.set(false); failed.set(true); return };
-                            
-                        if resp.status() == 204 {
-                            return;
-                        }
-                            
-                        let Ok(result) = resp.text().await
-                            else { loading.set(false); failed.set(true); return };
-                        let Ok(data) = serde_json::from_str::<Vec<R>>(&result)
-                            else { loading.set(false); failed.set(true); return };
+                            else { state.set(Failed(Generic)); return };
                         
-                        data_state.set(Some(Rc::from(data)));
-                        loading.set(false);
+                        state.set(match resp.status() {
+                            200 => {
+                                let Ok(result) = resp.text().await
+                                    else { state.set(Failed(Generic)); return };
+                                let Ok(data) = serde_json::from_str::<Vec<R>>(&result)
+                                    else { state.set(Failed(Generic)); return };
+                                
+                                data_state.set(Some(Rc::from(data)));
+                                Showing
+                            },
+                            204 => Loading,
+                            429 => Failed(TooMany),
+                            503 => Failed(Busy),
+                            _ => Failed(Generic),
+                        });
                     });
                 }
             };
@@ -217,29 +227,29 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     
     let onclick = {
         let engine = engine.clone();
-        let failed = failed.clone();
+        let state = state.clone();
         Callback::from(move |e : MouseEvent| {
             if let Ok(eng) = engine.try_borrow() {
-                eng.clicked(e).unwrap_or_else(|_| { failed.set(true); });
+                eng.clicked(e).unwrap_or_else(|_| { state.set(Failed(Generic)); });
             } else {
-                failed.set(true);
+                state.set(Failed(Generic));
             }
         })
     };
     
     let onmousemove = {
         let engine = engine.clone();
-        let failed = failed.clone();
+        let state = state.clone();
         let inter_canvas = inter_canvas.clone();
         Callback::from(move |e : MouseEvent| {
             if let Some(ic) = inter_canvas.cast() {
                 if let Ok(mut eng) = engine.try_borrow_mut() {
-                    eng.hover(e, ic).unwrap_or_else(|_| { failed.set(true); });
+                    eng.hover(e, ic).unwrap_or_else(|_| { state.set(Failed(Generic)); });
                 } else {
-                    failed.set(true);
+                    state.set(Failed(Generic));
                 }
             } else {
-                failed.set(true);
+                state.set(Failed(Generic));
             }
         })
     };
@@ -247,8 +257,8 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
     let mut canvas_style = "display: none".to_string();
     let mut inter_canvas_style = "display: none".to_string();
     let mut message_style = "";
-    let mut message = "no results found".to_string();
-    let loader_style = if *loading {"display: flex"} else {"display: none"};
+    let mut message = "no results found";
+    let mut loader_style = "display: none";
     
     match data_state.as_ref() {
         None => {},
@@ -260,24 +270,34 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
                     let width = eng.get_width();
                     let height = eng.get_height();
                     
-                    let canvas_opacity = if *loading {"0.25"} else {"1"};
+                    let canvas_opacity = if *state == Loading {"0.25"} else {"1"};
                     canvas_style = format!("opacity: {}; width: {}px; height: {}px", canvas_opacity, width, height);
                     inter_canvas_style = format!("width: {}px; height: {}px", width, height);
                     if let (Some(canvas), Some(inter_canvas)) = (canvas.clone().cast(), inter_canvas.clone().cast()) {
-                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { failed.set(true); });
+                        eng.redraw(canvas, inter_canvas).unwrap_or_else(|_| { state.set(Failed(Generic)); });
                     }
                 }
             } else {
-                failed.set(true);
+                state.set(Failed(Generic));
             }
         }
     }
     
-    if *failed {
-        canvas_style = "display: none".to_string();
-        inter_canvas_style = "display: none".to_string();
-        message = "an error occurred".to_string();
-        message_style = "display: initial";
+    match *state {
+        Showing => {},
+        Loading => {
+            loader_style = "display: flex";
+        },
+        Failed(e) => {
+            canvas_style = "display: none".to_string();
+            inter_canvas_style = "display: none".to_string();
+            message_style = "display: initial";
+            message = match e {
+                Generic => "an error occurred - please try refreshing",
+                TooMany => "too many requests - please slow down",
+                Busy => "servers busy - please try again later",
+            };
+        },
     }
         
     html! {
@@ -296,4 +316,14 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             <div />
         }
     }
+}
+
+/// Returns the CanvasRenderingContext2d object for the given HtmlCanvasElement
+
+pub fn canvas_context(canvas: &HtmlCanvasElement) -> Option<CanvasRenderingContext2d> {
+    canvas
+        .get_context("2d")
+        .ok()??
+        .dyn_into::<CanvasRenderingContext2d>()
+        .ok()
 }

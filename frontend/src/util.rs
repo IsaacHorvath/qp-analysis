@@ -1,6 +1,5 @@
 use common::models::BreakdownType;
 use gloo_net::http::{Request, Response};
-use anyhow::bail;
 use anyhow::Result;
 
 // todo think about moving structs to a models file
@@ -35,10 +34,6 @@ pub async fn put<T>(uri: &str, body: T) -> Result<Response>
         .json(&body)?;
         
     let resp = req.send().await?;
-        
-    if !resp.ok() {
-        bail!("request failed");
-    };
     
     Ok(resp)
 }
