@@ -20,6 +20,7 @@ use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::reaper::Message;
 use tokio::sync::{mpsc, mpsc::Sender};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
@@ -28,7 +29,6 @@ use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::EnvFilter;
-use crate::reaper::Message;
 
 mod db;
 mod dummy_db;
@@ -62,15 +62,12 @@ struct Opt {
 
 #[derive(Clone)]
 struct AppState {
-    
     /// The connection pool for the app. If None, we are in dummy mode and pulling
     /// hardcoded demo data. If Some, the pool will retain 10 idle connections and
     /// will open at max 50 connections.
-    
     connection_pool: Option<Pool<AsyncMysqlConnection>>,
-    
+
     /// A sender to send registration and kill messages to the reaper.
-    
     sender: Sender<Message>,
 }
 
@@ -85,21 +82,27 @@ async fn main() {
     let opt = Opt::parse();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", opt.log_level)
+        std::env::set_var("RUST_LOG", opt.log_level);
     }
-    
+
     let (sender, mut receiver) = mpsc::channel(50);
 
     let state = AppState {
-        connection_pool: if opt.dummy {None} else {Some(get_connection_pool().await)},
+        connection_pool: if opt.dummy {
+            None
+        } else {
+            Some(get_connection_pool().await)
+        },
         sender,
     };
-    
+
     if !opt.dummy {
         let state = state.clone();
-        tokio::spawn(async move { reaper(state.connection_pool.unwrap(), &mut receiver).await; });
+        tokio::spawn(async move {
+            reaper(state.connection_pool.unwrap(), &mut receiver).await;
+        });
     }
-    
+
     let file_appender = tracing_appender::rolling::hourly(opt.log_dir, "prefix.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
@@ -108,15 +111,11 @@ async fn main() {
         .json()
         .with_writer(non_blocking)
         .init();
-        
-    let service = ServiceBuilder::new()
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(
-                    DefaultMakeSpan::new().include_headers(true)
-                )
-        );
-    
+
+    let service = ServiceBuilder::new().layer(
+        TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().include_headers(true)),
+    );
+
     let governor_conf = std::sync::Arc::new(
         GovernorConfigBuilder::default()
             .per_second(1)
@@ -134,8 +133,7 @@ async fn main() {
             governor_limiter.retain_recent();
         }
     });
-    
-        
+
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
         .route("/api/speakers", get(speakers))
@@ -150,9 +148,8 @@ async fn main() {
         )
         .layer(service)
         .layer(GovernorLayer {
-           config: governor_conf,
-        })
-        .into_make_service_with_connect_info::<SocketAddr>();
+            config: governor_conf,
+        });
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {
@@ -169,7 +166,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&sock_addr)
         .await
         .expect("unable to bind listener");
-        
+
     axum::serve(listener, app)
         .await
         .expect("Unable to start server");
@@ -197,24 +194,30 @@ async fn breakdown(
     Path(breakdown_type): Path<String>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<BreakdownResponse>>, AppError> {
-    
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         let conn_id = get_connection_id(&mut conn).await?;
-        
+
         let token = CancellationToken::new();
-        
-        state.sender.send(Message::Register((
-            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
-            token.clone()
-        ))).await?;
-        
+
+        state
+            .sender
+            .send(Message::Register((
+                ActiveQuery {
+                    uuid: payload.uuid.clone(),
+                    conn_id,
+                    speech: false,
+                },
+                token.clone(),
+            )))
+            .await?;
+
         let search = payload.search.to_lowercase().replace(
             |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
             "",
         );
-        
+
         let response = tokio::select! {
             res = get_breakdown_word_count(&mut conn, breakdown_type, &search) => {
                 Ok(Json(res?))
@@ -223,12 +226,17 @@ async fn breakdown(
                 Err(AppError::Cancelled)
             }
         };
-        
+
         // todo don't send this if we cancelled anyway
-        state.sender.send(Message::Deregister(
-            ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
-        )).await?;
-        
+        state
+            .sender
+            .send(Message::Deregister(ActiveQuery {
+                uuid: payload.uuid,
+                conn_id,
+                speech: false,
+            }))
+            .await?;
+
         response
     } else {
         Ok(Json(dummy_get_breakdown_word_count(breakdown_type)))
@@ -245,23 +253,29 @@ async fn population(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<PopulationResponse>>, AppError> {
-    
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         let conn_id = get_connection_id(&mut conn).await?;
-        
+
         let token = CancellationToken::new();
-        
-        state.sender.send(Message::Register((
-            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: false },
-            token.clone()
-        ))).await?;
-        
+
+        state
+            .sender
+            .send(Message::Register((
+                ActiveQuery {
+                    uuid: payload.uuid.clone(),
+                    conn_id,
+                    speech: false,
+                },
+                token.clone(),
+            )))
+            .await?;
+
         let search = payload.search.to_lowercase().replace(
             |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
             "",
         );
-        
+
         let response = tokio::select! {
             res = get_population_word_count(&mut conn, &search) => {
                 Ok(Json(res?))
@@ -270,11 +284,16 @@ async fn population(
                 Err(AppError::Cancelled)
             }
         };
-        
-        state.sender.send(Message::Deregister(
-            ActiveQuery { uuid: payload.uuid, conn_id, speech: false }
-        )).await?;
-        
+
+        state
+            .sender
+            .send(Message::Deregister(ActiveQuery {
+                uuid: payload.uuid,
+                conn_id,
+                speech: false,
+            }))
+            .await?;
+
         response
     } else {
         Ok(Json(dummy_get_population_word_count()))
@@ -292,24 +311,30 @@ async fn speeches(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<SpeechResponse>>, AppError> {
-    
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         let conn_id = get_connection_id(&mut conn).await?;
-        
+
         let token = CancellationToken::new();
-        
-        state.sender.send(Message::Register((
-            ActiveQuery { uuid: payload.uuid.clone(), conn_id, speech: true },
-            token.clone()
-        ))).await?;
-        
+
+        state
+            .sender
+            .send(Message::Register((
+                ActiveQuery {
+                    uuid: payload.uuid.clone(),
+                    conn_id,
+                    speech: true,
+                },
+                token.clone(),
+            )))
+            .await?;
+
         let search = payload.search.to_lowercase().replace(
             |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
             "",
         );
         let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
-        
+
         let response = tokio::select! {
             res = get_speeches(&mut conn, breakdown_type, id, &search) => {
                 Ok(Json(res?))
@@ -318,27 +343,38 @@ async fn speeches(
                 Err(AppError::Cancelled)
             }
         };
-        
-        state.sender.send(Message::Deregister(
-            ActiveQuery { uuid: payload.uuid, conn_id, speech: true }
-        )).await?;
+
+        state
+            .sender
+            .send(Message::Deregister(ActiveQuery {
+                uuid: payload.uuid,
+                conn_id,
+                speech: true,
+            }))
+            .await?;
 
         response
     } else {
-        return Ok(Json(dummy_get_speeches()))
+        return Ok(Json(dummy_get_speeches()));
     }
 }
 
 /// Cancel all current requests associated with the uuid in the payload.
 
-async fn cancel(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
+async fn cancel(
+    State(state): State<AppState>,
+    Json(payload): Json<CancelRequest>,
+) -> Result<(), AppError> {
     state.sender.send(Message::Kill(payload.uuid)).await?;
     Ok(())
 }
 
 /// Cancel all current speech requests associated with the uuid in the payload.
 
-async fn cancel_speech(State(state): State<AppState>,Json(payload): Json<CancelRequest>) -> Result<(), AppError> {
+async fn cancel_speech(
+    State(state): State<AppState>,
+    Json(payload): Json<CancelRequest>,
+) -> Result<(), AppError> {
     state.sender.send(Message::KillSpeech(payload.uuid)).await?;
     Ok(())
 }

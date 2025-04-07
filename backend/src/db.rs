@@ -34,7 +34,7 @@ use std::env;
 #[derive(QueryableByName)]
 struct ConnectionId {
     #[diesel(sql_type = Integer)]
-    id: i32
+    id: i32,
 }
 
 /// Returns an initialized bb8 async connection pool for the database.
@@ -78,17 +78,22 @@ pub async fn get_connection_id(connection: &mut AsyncMysqlConnection) -> Result<
 /// Kills the query associated with the gived connection id. See the
 /// [mariadb KILL docs](https://mariadb.com/kb/en/kill/).
 
-pub async fn kill_connection_id(connection: &mut AsyncMysqlConnection, id: &i32) -> Result<(), AppError> {
+pub async fn kill_connection_id(
+    connection: &mut AsyncMysqlConnection,
+    id: &i32,
+) -> Result<(), AppError> {
     let _ = sql_query(format!("KILL QUERY {};", id))
         .execute(connection)
         .await?;
-        
+
     Ok(())
 }
 
 /// Returns all the speakers in the database, as SpeakerResponse objects.
 
-pub async fn get_speakers(connection: &mut AsyncMysqlConnection) -> Result<Vec<SpeakerResponse>, AppError> {
+pub async fn get_speakers(
+    connection: &mut AsyncMysqlConnection,
+) -> Result<Vec<SpeakerResponse>, AppError> {
     Ok(speaker
         .select((speaker_id, first_name, last_name))
         .load::<(i32, String, String)>(connection)
@@ -272,9 +277,5 @@ pub async fn get_speeches(
             .load::<SpeechRow>(connection),
     };
 
-    Ok(loaded
-        .await?
-        .into_iter()
-        .map(|row| row.into())
-        .collect())
+    Ok(loaded.await?.into_iter().map(|row| row.into()).collect())
 }
