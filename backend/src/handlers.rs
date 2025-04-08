@@ -33,6 +33,7 @@ pub async fn breakdown(
     Path(breakdown_type): Path<String>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<BreakdownResponse>>, AppError> {
+    tracing::info!("{payload}");
     let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
@@ -92,6 +93,7 @@ pub async fn population(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<PopulationResponse>>, AppError> {
+    tracing::info!("{payload}");
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         let conn_id = get_connection_id(&mut conn).await?;
@@ -150,6 +152,7 @@ pub async fn speeches(
     State(state): State<AppState>,
     Json(payload): Json<DataRequest>,
 ) -> Result<Json<Vec<SpeechResponse>>, AppError> {
+    tracing::info!("{payload}");
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         let conn_id = get_connection_id(&mut conn).await?;
@@ -204,6 +207,7 @@ pub async fn cancel(
     State(state): State<AppState>,
     Json(payload): Json<CancelRequest>,
 ) -> Result<(), AppError> {
+    tracing::debug!("{payload}");
     state.sender.send(Message::Kill(payload.uuid)).await?;
     Ok(())
 }
@@ -214,6 +218,7 @@ pub async fn cancel_speech(
     State(state): State<AppState>,
     Json(payload): Json<CancelRequest>,
 ) -> Result<(), AppError> {
+    tracing::debug!("{payload}");
     state.sender.send(Message::KillSpeech(payload.uuid)).await?;
     Ok(())
 }

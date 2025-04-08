@@ -46,12 +46,24 @@ pub struct DataRequest {
     pub search: String,
 }
 
+impl fmt::Display for DataRequest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "uuid: {}\tsearch: {}", self.uuid, self.search)
+    }
+}
+
 /// A request to cancel ongoing all database queries (or speech queries,
 /// specifically) associated with the current user.
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CancelRequest {
     pub uuid: Uuid,
+}
+
+impl fmt::Display for CancelRequest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "uuid: {}", self.uuid)
+    }
 }
 
 /// A response from the backend representing a speaker.
