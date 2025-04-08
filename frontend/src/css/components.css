@@ -55,6 +55,7 @@
 .plot-message {
     display: none;
     text-align: center;
+    color: #999999;
 }
 
 .canvas {
