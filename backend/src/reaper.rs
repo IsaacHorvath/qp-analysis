@@ -1,4 +1,4 @@
-use crate::kill_connection_id;
+use crate::db::kill_connection_id;
 use diesel_async::{pooled_connection::bb8::Pool, AsyncMysqlConnection};
 use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
