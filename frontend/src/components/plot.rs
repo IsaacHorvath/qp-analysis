@@ -192,7 +192,7 @@ pub fn plot<P, R>(props: &PlotProps) -> Html
             }
             
             if let PlotSource::Uri(uri) = source {
-                if *word_state != word && visible {
+                if *word_state != word && visible && *state != Failed(Generic) {
                     state.set(Loading);
                     word_state.set(word.clone());
                     spawn_local(async move {

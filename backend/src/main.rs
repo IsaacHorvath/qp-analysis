@@ -129,6 +129,14 @@ async fn main() {
             config: governor_conf,
         });
 
+    tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(60)).await;
+            tracing::trace!("rate limiting storage size: {}", governor_limiter.len());
+            governor_limiter.retain_recent();
+        }
+    });
+
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
         .route("/api/speakers", get(speakers))
