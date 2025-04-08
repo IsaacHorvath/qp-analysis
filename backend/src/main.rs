@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 use crate::reaper::Message;
 use tokio::sync::{mpsc, mpsc::Sender};
-use tokio::time::sleep;
+use tokio::time::{Duration, sleep};
 use tokio_util::sync::CancellationToken;
 use tower::ServiceBuilder;
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
@@ -112,10 +112,6 @@ async fn main() {
         .with_writer(non_blocking)
         .init();
 
-    let service = ServiceBuilder::new().layer(
-        TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().include_headers(true)),
-    );
-
     let governor_conf = std::sync::Arc::new(
         GovernorConfigBuilder::default()
             .per_second(1)
@@ -123,16 +119,15 @@ async fn main() {
             .finish()
             .expect("couldn't build rate limit governor"),
     );
-
     let governor_limiter = governor_conf.limiter().clone();
-    let interval = tokio::time::Duration::from_secs(60);
-    tokio::spawn(async move {
-        loop {
-            sleep(interval).await;
-            tracing::trace!("rate limiting storage size: {}", governor_limiter.len());
-            governor_limiter.retain_recent();
-        }
-    });
+
+    let service = ServiceBuilder::new()
+        .layer(
+            TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().include_headers(true)),
+        )
+        .layer(GovernorLayer {
+            config: governor_conf,
+        });
 
     let index_path = PathBuf::from(&opt.static_dir).join("index.html");
     let app = Router::new()
@@ -147,10 +142,7 @@ async fn main() {
             ServeDir::new(&opt.static_dir).not_found_service(ServeFile::new(index_path)),
         )
         .layer(service)
-        .layer(GovernorLayer {
-            config: governor_conf,
-        })
-        .into_make_service();
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     let mut port = opt.port;
     if let Ok(port_env) = std::env::var("PORT") {
