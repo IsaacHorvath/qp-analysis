@@ -1,15 +1,12 @@
-use common::models::{BreakdownType, CancelRequest, SpeakerResponse};
+use common::models::{BreakdownType, CancelRequest};
 use yew::prelude::*;
 use gloo::utils::body;
-use gloo_net::http::Request;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::SpeechOverlay;
 use crate::pages::error_page::error_page;
 use crate::State;
 use crate::util::*;
-use std::collections::HashMap;
-use std::rc::Rc;
 
 /// The main interface page for this tool.
 ///
@@ -19,8 +16,6 @@ use std::rc::Rc;
 #[function_component(InterfacePage)]
 pub fn interface_page() -> Html {
     let app_state = use_context::<State>();
-    let speakers = use_state(|| None);
-    let loading = use_state(|| false);
     let failed = use_state(|| false);
     
     let show_charts = use_state(|| false);
@@ -35,31 +30,6 @@ pub fn interface_page() -> Html {
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
     let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
-
-    {
-        let speakers = speakers.clone();
-        let loading = loading.clone();
-        let failed = failed.clone();
-        use_effect(move || {
-            if *speakers == None && *loading == false && *failed == false {
-                loading.set(true);
-                spawn_local(async move {
-                    let uri = format!("/api/speakers");
-                    let Ok(resp) = Request::get(&uri).send().await else {failed.set(true); return};
-                    let Ok(resp_text) = &resp.text().await else {failed.set(true); return};
-                    let Ok(speaker_response) = serde_json::from_str::<Vec<SpeakerResponse>>(resp_text) else {failed.set(true); return};
-                    speakers.set(Some(Rc::new(speaker_response
-                        .into_iter()
-                        .map(|s| {(s.id, Speaker {first_name: s.first_name, last_name: s.last_name})})
-                        .collect::<HashMap<i32, Speaker>>()
-                    )));
-                    loading.set(false);
-                });
-            }
-    
-            || {}
-        });
-    }
     
     fn build_on(state: UseStateHandle<bool>) -> Callback<MouseEvent> {
         Callback::from(move |e : MouseEvent| {
@@ -136,7 +106,6 @@ pub fn interface_page() -> Html {
         })
     };
     
-    let dummy_ref = Rc::new(HashMap::new());
     let provincial = if let Some(state) = app_state {state.provincial} else {failed.set(true); false};
     
     html! {
@@ -197,20 +166,17 @@ pub fn interface_page() -> Html {
                     show_pop={*show_pop}
                     get_speeches={&get_speeches}
                 />
-            } else {
-                {error_page()}
-            }
             
-            if (*selection).id != 0 {
-                if !*loading && !*failed {
+                if (*selection).id != 0 {
                     <SpeechOverlay
                         selection={(*selection).clone()}
                         word={(*speech_overlay_word).clone()}
                         visible={*speech_overlay_visible}
                         hide={hide_speech_overlay}
-                        speakers={Rc::clone((*speakers).as_ref().unwrap_or_else(|| {failed.set(true); &dummy_ref}))}
                     />
                 }
+            } else {
+                {error_page()}
             }
         </div>
     }

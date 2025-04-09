@@ -4,6 +4,9 @@
 //! the House of Commons (and the Ontario legislature) and generate graphs based on
 //! the usage of the search word or phrase. Also provides an info and about page.
 
+use crate::util::Speaker;
+use common::models::SpeakerResponse;
+use gloo_net::http::Request;
 use yew::prelude::*;
 use yew_router::prelude::*;
 use components::navbar::*;
@@ -11,11 +14,18 @@ use pages::about_me_page::AboutMePage;
 use pages::error_page::error_page;
 use pages::interface_page::InterfacePage;
 use pages::info_page::InfoPage;
+use std::collections::HashMap;
 use uuid::Uuid;
+use wasm_bindgen_futures::spawn_local;
 
 mod pages;
 mod components;
 mod util;
+
+/// A struct to represent an error fetching the list of speakers.
+
+#[derive(Clone, Debug, PartialEq)]
+struct SpeakerError;
 
 /// A struct to store global frontend state. This is provided to all components in
 /// the app via yew's context system.
@@ -30,6 +40,10 @@ struct State {
     /// A bool to indicate whether we are running the federal or Ontario version.
     
     provincial: bool,
+    
+    /// A map of speaker ids to first and last names, the frontend speaker store.
+    
+    speakers: Result<Option<HashMap<i32, Speaker>>, SpeakerError>,
 }
 
 /// The router function, matching the route enum to a page.
@@ -78,9 +92,43 @@ fn app() -> Html {
     let Some(document) = window.document() else {return error_page()};
     let Ok(url) = document.url() else {return error_page()};
     
+    let loading = use_state(|| false);
+    let speakers = use_state(|| Ok(None));
+
+    {
+        let loading = loading.clone();
+        let speakers = speakers.clone();
+        use_effect(move || {
+            if *speakers == Ok(None) && *loading == false {
+                loading.set(true);
+                spawn_local(async move {
+                    let uri = format!("/api/speakers");
+                    let Ok(resp) = Request::get(&uri).send().await
+                        else { speakers.set(Err(SpeakerError)); return };
+                    
+                    let Ok(resp_text) = &resp.text().await
+                        else { speakers.set(Err(SpeakerError)); return };
+                    
+                    let Ok(speaker_response) = serde_json::from_str::<Vec<SpeakerResponse>>(resp_text)
+                        else { speakers.set(Err(SpeakerError)); return };
+                    
+                    speakers.set(Ok(Some(speaker_response
+                        .into_iter()
+                        .map(|s| {(s.id, Speaker {first_name: s.first_name, last_name: s.last_name})})
+                        .collect::<HashMap<i32, Speaker>>()
+                    )));
+                    loading.set(false);
+                });
+            }
+    
+            || {}
+        });
+    }
+    
     let state = State {
         uuid: Uuid::new_v4(),
         provincial: url.contains("queen") || url.contains("localhost"),
+        speakers: (*speakers).clone(),
     };
     
     html! {

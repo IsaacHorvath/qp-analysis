@@ -1,8 +1,6 @@
 use yew::prelude::*;
-use common::models::{BreakdownType, SpeakerResponse, BreakdownResponse, PopulationResponse};
+use common::models::{BreakdownType, BreakdownResponse, PopulationResponse};
 use gloo::utils::body;
-use gloo_net::http::Request;
-use wasm_bindgen_futures::spawn_local;
 use crate::components::plot::{Plot, PlotSource};
 use crate::components::breakdown_engine::BreakdownEngine;
 use crate::components::population_engine::PopulationEngine;
@@ -11,49 +9,21 @@ use crate::components::speech_box::SpeechBox;
 use crate::pages::error_page::error_page;
 use crate::pages::info_page_data::*;
 use crate::State;
-use crate::util::{Speaker, OverlaySelection};
-use std::collections::HashMap;
-use std::rc::Rc;
+use crate::util::OverlaySelection;
 
 /// An info page explaining the tool, with embedded demo charts.
 
 #[function_component(InfoPage)]
 pub fn info_page() -> Html {
-    let speakers = use_state(|| None);
+    let app_state = use_context::<State>();
     let failed = use_state(|| false);
     
     let show_charts = use_state(|| false);
-    let loading = use_state(|| false);
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
     let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
-
-    {
-        let speakers = speakers.clone();
-        let loading = loading.clone();
-        let failed = failed.clone();
-        use_effect(move || {
-            if *speakers == None && *loading == false && *failed == false {
-                loading.set(true);
-                spawn_local(async move {
-                    let uri = format!("/api/speakers");
-                    let Ok(resp) = Request::get(&uri).send().await else {failed.set(true); return};
-                    let Ok(resp_text) = &resp.text().await else {failed.set(true); return};
-                    let Ok(speaker_response) = serde_json::from_str::<Vec<SpeakerResponse>>(resp_text) else {failed.set(true); return};
-                    speakers.set(Some(Rc::new(speaker_response
-                        .into_iter()
-                        .map(|s| {(s.id, Speaker {first_name: s.first_name, last_name: s.last_name})})
-                        .collect::<HashMap<i32, Speaker>>()
-                    )));
-                    loading.set(false);
-                });
-            }
     
-            || {}
-        });
-    }
-    
-    if let Some(state) = use_context::<State>() {
+    if let Some(state) = app_state {
         if state.provincial {
             // todo finish this and move it back to its own page
             return html! {
@@ -95,8 +65,6 @@ pub fn info_page() -> Html {
             else {show_charts.set(false);}
         })
     };
-    
-    let dummy_ref = Rc::new(HashMap::new());
             
     html! {
         if !*failed {
@@ -239,15 +207,12 @@ pub fn info_page() -> Html {
                 <p>{"Note that almost all of the people who have actually spoken about Gaza in the house come from urban ridings. Of the few exceptions, way at the left side of the graph, none are Conservative. Each of these dots can be clicked to bring up the speeches made by the MP in that riding."}</p>
                 
                 if (*selection).id != 0 {
-                    if (*loading) == false {
-                        <SpeechOverlay
-                            selection={(*selection).clone()}
-                            word={(*speech_overlay_word).clone()}
-                            visible={*speech_overlay_visible}
-                            hide={hide_speech_overlay}
-                            speakers={Rc::clone((*speakers).as_ref().unwrap_or_else(|| {failed.set(true); &dummy_ref}))}
-                        />
-                    }
+                    <SpeechOverlay
+                        selection={(*selection).clone()}
+                        word={(*speech_overlay_word).clone()}
+                        visible={*speech_overlay_visible}
+                        hide={hide_speech_overlay}
+                    />
                 }
             </div>
         } else {
