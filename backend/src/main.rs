@@ -111,7 +111,7 @@ async fn main() {
     let governor_conf = std::sync::Arc::new(
         GovernorConfigBuilder::default()
             .per_second(1)
-            .burst_size(5)
+            .burst_size(10)
             .finish()
             .expect("couldn't build rate limit governor"),
     );

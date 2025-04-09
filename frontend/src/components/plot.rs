@@ -74,7 +74,7 @@ pub trait Plottable<R>
 #[derive(Clone, PartialEq)]
 pub enum PlotSource {
     Uri(String),
-    Json(String)
+    Json(&'static str),
 }
 
 /// Properties for the plot component.

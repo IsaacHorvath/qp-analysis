@@ -53,13 +53,8 @@ pub async fn breakdown(
             )))
             .await?;
 
-        let search = payload.search.to_lowercase().replace(
-            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-            "",
-        );
-
         let response = tokio::select! {
-            res = get_breakdown_word_count(&mut conn, breakdown_type, &search) => {
+            res = get_breakdown_word_count(&mut conn, breakdown_type, &payload.search) => {
                 Ok(Json(res?))
             }
             _ = token.cancelled() => {
@@ -112,13 +107,8 @@ pub async fn population(
             )))
             .await?;
 
-        let search = payload.search.to_lowercase().replace(
-            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-            "",
-        );
-
         let response = tokio::select! {
-            res = get_population_word_count(&mut conn, &search) => {
+            res = get_population_word_count(&mut conn, &payload.search) => {
                 Ok(Json(res?))
             }
             _ = token.cancelled() => {
@@ -170,15 +160,11 @@ pub async fn speeches(
                 token.clone(),
             )))
             .await?;
-
-        let search = payload.search.to_lowercase().replace(
-            |c: char| !(c.is_ascii_alphanumeric() || c == ' ' || c == '-'),
-            "",
-        );
+            
         let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
 
         let response = tokio::select! {
-            res = get_speeches(&mut conn, breakdown_type, id, &search) => {
+            res = get_speeches(&mut conn, breakdown_type, id, &payload.search) => {
                 Ok(Json(res?))
             }
             _ = token.cancelled() => {

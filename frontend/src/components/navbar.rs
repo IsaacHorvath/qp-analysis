@@ -48,7 +48,7 @@ pub fn navbar() -> Html {
     
     let window = window();
     let prev_s = use_state(|| 0);
-    let navbar_class = use_state(|| "navbar".to_string());
+    let navbar_class = use_state(|| "navbar");
     
     {
         let navbar_class = navbar_class.clone();
@@ -60,10 +60,10 @@ pub fn navbar() -> Html {
             let s = scrolling_element.scroll_top();
             
             if s > *prev_s {
-                navbar_class.set("navbar hide".to_string());
+                navbar_class.set("navbar hide");
             }
             else if s < *prev_s {
-                navbar_class.set("navbar".to_string());
+                navbar_class.set("navbar");
             }
             prev_s.set(s);
         });
@@ -73,7 +73,7 @@ pub fn navbar() -> Html {
     }
     
     html! {
-        <div class={(*navbar_class).clone()}>
+        <div class={*navbar_class}>
             <div class="navbar-item">
                 <Link<Route> to={Route::Interface}>
                     <button class={if info == Route::Interface {"button highlight"} else {"button"}} >{"search"}</button>

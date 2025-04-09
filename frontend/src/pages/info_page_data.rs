@@ -6,7 +6,7 @@ use time::macros::{date, time};
 
 /// Returns demo party breakdown data in json format for the word "pipeline".
 
-pub fn pipeline_party_data() -> String {
+pub fn pipeline_party_data() -> &'static str {
     r#"[
         {"id":1,"name":"Liberal","colour":"EA6D6A","count":175,"score":2.192533},
         {"id":2,"name":"Conservative","colour":"6495ED","count":631,"score":6.753006},
@@ -14,7 +14,7 @@ pub fn pipeline_party_data() -> String {
         {"id":4,"name":"NDP","colour":"F4A460","count":274,"score":8.032308},
         {"id":5,"name":"Green","colour":"98CA66","count":207,"score":48.23286},
         {"id":6,"name":"Independent","colour":"DCDCDC","count":3,"score":2.5524747}
-    ]"#.to_string()
+    ]"#
 }
 
 /// Returns a demo speech in json format.
@@ -32,17 +32,17 @@ pub fn speech_data() -> SpeechResponse {
 /// Returns demo gender breakdown data in json format for the phrase "mental
 /// health".
 
-pub fn mental_gender_data() -> String {
+pub fn mental_gender_data() -> &'static str {
     r#"[
         {"id":1,"name":"female","colour":"F4F462","count":1900,"score":28.98253},
         {"id":2,"name":"male","colour":"ABF462","count":3468,"score":19.467318},
         {"id":3,"name":"two-spirit","colour":"AB62F4","count":22,"score":16.175756}
-    ]"#.to_string()
+    ]"#
 }
 
 /// Returns demo province breakdown data in json format for the word "trump".
 
-pub fn trump_province_data() -> String {
+pub fn trump_province_data() -> &'static str {
     r#"[
         {"id":1,"name":"Alberta","colour":"6495ED","count":54,"score":1.7877634},
         {"id":2,"name":"British Columbia","colour":"F4A460","count":100,"score":2.822971},
@@ -53,12 +53,12 @@ pub fn trump_province_data() -> String {
         {"id":9,"name":"Ontario","colour":"EA6D6A","count":266,"score":3.496633},
         {"id":11,"name":"Quebec","colour":"87CEFA","count":155,"score":2.714894},
         {"id":12,"name":"Saskatchewan","colour":"FFF169","count":11,"score":1.2284546}
-    ]"#.to_string()
+    ]"#
 }
 
 /// Returns demo speaker breakdown data for the word "pharmacare".
 
-pub fn pharma_speaker_data() -> String {
+pub fn pharma_speaker_data() -> &'static str {
     r#"[
         {"id":242,"name":"Yasir Naqvi","colour":"EA6D6A","count":53,"score":95.425},
         {"id":164,"name":"Peter Julian","colour":"F4A460","count":258,"score":82.8277},
@@ -70,12 +70,12 @@ pub fn pharma_speaker_data() -> String {
         {"id":146,"name":"Lisa Hepfner","colour":"EA6D6A","count":15,"score":44.9991},
         {"id":46,"name":"Alexandre Boulerice","colour":"F4A460","count":71,"score":44.773483},
         {"id":293,"name":"Sonia Sidhu","colour":"EA6D6A","count":9,"score":41.430744}
-    ]"#.to_string()
+    ]"#
 }
 
 /// Returns demo population density data for the word "gaza".
 
-pub fn gaza_pop_data() -> String {
+pub fn gaza_pop_data() -> &'static str {
     r#"[
         {"id":1,"name":"Edmonton Manning","population":132224,"area":157.08,"colour":"6495ED","count":0,"score":0.0},
         {"id":2,"name":"Parry Sound-Muskoka","population":104494,"area":12237.99,"colour":"6495ED","count":0,"score":0.0},
@@ -424,5 +424,5 @@ pub fn gaza_pop_data() -> String {
         {"id":347,"name":"Port Moody—Coquitlam","population":114853,"area":95.16,"colour":"F4A460","count":0,"score":0.0},
         {"id":348,"name":"Prince George—Peace River—Northern Rockies","population":108998,"area":249105.22,"colour":"6495ED","count":0,"score":0.0},
         {"id":349,"name":"Pierrefonds—Dollard","population":109497,"area":50.74,"colour":"EA6D6A","count":5,"score":20.920504}
-    ]"#.to_string()
+    ]"#
 }

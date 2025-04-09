@@ -1,6 +1,8 @@
+use aho_corasick::AhoCorasick;
 use common::models::{BreakdownType, CancelRequest};
 use yew::prelude::*;
 use gloo::utils::body;
+use regex::Regex;
 use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::SpeechOverlay;
@@ -69,7 +71,7 @@ pub fn interface_page() -> Html {
                 spawn_local(async move {
                     let cancel_request = CancelRequest { uuid: state.uuid };
                     let _ = put("api/cancel", cancel_request).await;
-                    word.set((*input_value).clone());
+                    word.set(clean(&(*input_value)));
                 });
             } else {
                 failed.set(true);
@@ -180,4 +182,22 @@ pub fn interface_page() -> Html {
             }
         </div>
     }
+}
+
+fn clean(text: &str) -> String {
+    let patterns = &[".", ",", ";", ":", "!", "?", "\'", "\"", "”", "“", "’", "‘", "(", ")", "[", "]", "{", "}", "«", "»"];
+    let ac = AhoCorasick::builder().build(patterns).unwrap();
+    let mut clean = String::new();
+    ac.replace_all_with(text, &mut clean, |_, _, dst| {
+        dst.push_str("");
+        true
+    });
+    
+    clean = Regex::new(r#"\s+"#).unwrap()
+        .replace_all(&clean, " ")
+        .replace("—", " ")
+        .to_lowercase();
+    clean.insert(0, ' ');
+    clean.push(' ');
+    clean
 }
