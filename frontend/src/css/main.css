@@ -137,3 +137,20 @@
     flex-direction: column;
     max-width: min(max(480px, 100vw), 960px);
 }
+
+.info-pic {
+    margin: 0.5%;
+    /*overflow: auto;*/
+    border: 2px solid #fee17d;
+    border-radius: 10px;
+    /*padding: 1%;*/
+    width: fit-content;
+    /*max-width: 80vw;*/
+}
+
+.info-pic > img {
+    border-radius: 8px;
+    max-width: 80vw;
+    height: 100%;
+}
+
