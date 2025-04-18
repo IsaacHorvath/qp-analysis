@@ -214,7 +214,7 @@ pub fn info_page() -> Html {
                         get_speeches={get_speeches("economy".to_owned())}
                     />
                 </div>
-                <p>{"Note that homeowners and those with no assets tend to use this term less."}</p>
+                <p>{"Why might MPs with investments and rental properties be more likely to use the very word \"economy\" itself?"}</p>
 
                 <hr class="divider" />
 
