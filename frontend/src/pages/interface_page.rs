@@ -1,14 +1,14 @@
-use aho_corasick::AhoCorasick;
-use common::models::{BreakdownType, CancelRequest};
-use yew::prelude::*;
-use gloo::utils::body;
-use regex::Regex;
-use wasm_bindgen_futures::spawn_local;
 use crate::components::charts::Charts;
 use crate::components::speech_overlay::SpeechOverlay;
 use crate::pages::error_page::error_page;
-use crate::State;
 use crate::util::*;
+use crate::State;
+use aho_corasick::AhoCorasick;
+use common::models::{BreakdownType, CancelRequest};
+use gloo::utils::body;
+use regex::Regex;
+use wasm_bindgen_futures::spawn_local;
+use yew::prelude::*;
 
 /// The main interface page for this tool.
 ///
@@ -19,11 +19,12 @@ use crate::util::*;
 pub fn interface_page() -> Html {
     let app_state = use_context::<State>();
     let failed = use_state(|| false);
-    
+
     let show_charts = use_state(|| false);
     let show_party = use_state(|| true);
     let show_gender = use_state(|| false);
     let show_province = use_state(|| false);
+    let show_class = use_state(|| false);
     let show_speaker = use_state(|| false);
     let show_pop = use_state(|| false);
     let input_value = use_state(|| String::from(""));
@@ -31,38 +32,43 @@ pub fn interface_page() -> Html {
     let show_counts = use_state(|| false);
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
-    let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
-    
+    let selection = use_state(|| OverlaySelection {
+        breakdown_type: BreakdownType::Party,
+        id: 0,
+        heading: String::from(""),
+    });
+
     fn build_on(state: UseStateHandle<bool>) -> Callback<MouseEvent> {
-        Callback::from(move |e : MouseEvent| {
+        Callback::from(move |e: MouseEvent| {
             if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
                 state.set(input.checked());
             }
         })
     }
-    
+
     let on_party = build_on(show_party.clone());
     let on_gender = build_on(show_gender.clone());
     let on_province = build_on(show_province.clone());
+    let on_class = build_on(show_class.clone());
     let on_speaker = build_on(show_speaker.clone());
     let on_pop = build_on(show_pop.clone());
     let on_show_counts = build_on(show_counts.clone());
-    
+
     let on_input = {
         let input_value = input_value.clone();
-        Callback::from(move |e : Event| {
+        Callback::from(move |e: Event| {
             if let Some(input) = e.target_dyn_into::<web_sys::HtmlInputElement>() {
                 input_value.set(input.value());
             }
         })
     };
-    
+
     let submit = {
         let input_value = input_value.clone();
         let word = word.clone();
         let app_state = app_state.clone();
         let failed = failed.clone();
-        Callback::from(move |e : SubmitEvent| {
+        Callback::from(move |e: SubmitEvent| {
             e.prevent_default();
             let input_value = input_value.clone();
             let word = word.clone();
@@ -78,7 +84,7 @@ pub fn interface_page() -> Html {
             }
         })
     };
-    
+
     let get_speeches = {
         let selection = selection.clone();
         let word = word.clone();
@@ -91,7 +97,7 @@ pub fn interface_page() -> Html {
             speech_overlay_visible.set(true);
         })
     };
-    
+
     let hide_speech_overlay = {
         let speech_overlay_visible = speech_overlay_visible.clone();
         Callback::from(move |_| {
@@ -99,17 +105,25 @@ pub fn interface_page() -> Html {
             speech_overlay_visible.set(false);
         })
     };
-    
+
     let toggle_charts = |toggle| {
         let show_charts = show_charts.clone();
         Callback::from(move |_| {
-            if toggle {show_charts.set(!*show_charts);}
-            else {show_charts.set(false);}
+            if toggle {
+                show_charts.set(!*show_charts);
+            } else {
+                show_charts.set(false);
+            }
         })
     };
-    
-    let provincial = if let Some(state) = app_state {state.provincial} else {failed.set(true); false};
-    
+
+    let provincial = if let Some(state) = app_state {
+        state.provincial
+    } else {
+        failed.set(true);
+        false
+    };
+
     html! {
         <div class="interface">
             <div class="form-wrapper">
@@ -129,6 +143,10 @@ pub fn interface_page() -> Html {
                                 <div>
                                     <label for="show_province"> {"province"}</label>
                                     <input type="checkbox" id="show_province" onclick={on_province} />
+                                </div>
+                                <div>
+                                    <label for="show_class"> {"class"}</label>
+                                    <input type="checkbox" id="show_class" onclick={on_class} />
                                 </div>
                             }
                             <div>
@@ -156,7 +174,7 @@ pub fn interface_page() -> Html {
                     </div>
                 </form>
             </div>
-            
+
             if !*failed {
                 <Charts
                     word={(*word).clone()}
@@ -164,11 +182,12 @@ pub fn interface_page() -> Html {
                     show_party={*show_party}
                     show_gender={*show_gender}
                     show_province={*show_province}
+                    show_class={*show_class}
                     show_speaker={*show_speaker}
                     show_pop={*show_pop}
                     get_speeches={&get_speeches}
                 />
-            
+
                 if (*selection).id != 0 {
                     <SpeechOverlay
                         selection={(*selection).clone()}
@@ -185,19 +204,20 @@ pub fn interface_page() -> Html {
 }
 
 fn clean(text: &str) -> String {
-    let patterns = &[".", ",", ";", ":", "!", "?", "\'", "\"", "”", "“", "’", "‘", "(", ")", "[", "]", "{", "}", "«", "»"];
+    let patterns = &[
+        ".", ",", ";", ":", "!", "?", "\'", "\"", "”", "“", "’", "‘", "(", ")", "[", "]", "{", "}",
+        "«", "»",
+    ];
     let ac = AhoCorasick::builder().build(patterns).unwrap();
     let mut clean = String::new();
     ac.replace_all_with(text, &mut clean, |_, _, dst| {
         dst.push_str("");
         true
     });
-    
-    clean = Regex::new(r#"\s+"#).unwrap()
+
+    Regex::new(r#"\s+"#)
+        .unwrap()
         .replace_all(&clean, " ")
         .replace("—", " ")
-        .to_lowercase();
-    clean.insert(0, ' ');
-    clean.push(' ');
-    clean
+        .to_lowercase()
 }

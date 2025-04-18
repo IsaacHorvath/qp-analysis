@@ -1,8 +1,8 @@
-use crate::AppState;
 use crate::db::*;
 use crate::dummy_db::*;
 use crate::error::AppError;
 use crate::reaper::{ActiveQuery, Message};
+use crate::AppState;
 use axum::{
     extract::{Path, State},
     Json,
@@ -13,7 +13,9 @@ use tokio_util::sync::CancellationToken;
 
 /// Return all speakers in the database.
 
-pub async fn speakers(State(state): State<AppState>) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
+pub async fn speakers(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<SpeakerResponse>>, AppError> {
     if let Some(pool) = state.connection_pool {
         let mut conn = pool.get().await?;
         Ok(Json(get_speakers(&mut conn).await?))
@@ -160,7 +162,7 @@ pub async fn speeches(
                 token.clone(),
             )))
             .await?;
-            
+
         let breakdown_type = BreakdownType::from_str(breakdown_type.as_str())?;
 
         let response = tokio::select! {

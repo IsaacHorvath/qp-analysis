@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use std::fmt;
+use std::str::FromStr;
 use time::PrimitiveDateTime;
 use uuid::Uuid;
 
@@ -11,6 +11,7 @@ pub enum BreakdownType {
     Gender,
     Province,
     Speaker,
+    Class,
 }
 
 pub struct BreakdownTypeParseError;
@@ -22,8 +23,9 @@ impl FromStr for BreakdownType {
             "party" => Ok(BreakdownType::Party),
             "gender" => Ok(BreakdownType::Gender),
             "province" => Ok(BreakdownType::Province),
+            "class" => Ok(BreakdownType::Class),
             "speaker" => Ok(BreakdownType::Speaker),
-            _ => Err(BreakdownTypeParseError)
+            _ => Err(BreakdownTypeParseError),
         }
     }
 }
@@ -34,6 +36,7 @@ impl fmt::Display for BreakdownType {
             BreakdownType::Party => write!(f, "party"),
             BreakdownType::Gender => write!(f, "gender"),
             BreakdownType::Province => write!(f, "province"),
+            BreakdownType::Class => write!(f, "class"),
             BreakdownType::Speaker => write!(f, "speaker"),
         }
     }
@@ -112,7 +115,7 @@ pub fn to_breakdown_response(row: BreakdownRow) -> Option<BreakdownResponse> {
         name: row.1,
         colour: row.2,
         count: if row.3? > 0 { row.3? } else { None? },
-        score: row.4?
+        score: row.4?,
     })
 }
 

@@ -11,6 +11,7 @@ diesel::table! {
         age -> Integer,
         gender -> Integer,
         province -> Integer,
+        class -> Integer,
         riding -> Integer,
         elected -> Integer,
         total_words -> Integer,
@@ -40,6 +41,17 @@ diesel::table! {
 
 diesel::table! {
     province (id) {
+        id -> Integer,
+        #[max_length = 100]
+        name -> Varchar,
+        #[max_length = 6]
+        colour -> Varchar,
+        total_words -> Integer,
+    }
+}
+
+diesel::table! {
+    class (id) {
         id -> Integer,
         #[max_length = 100]
         name -> Varchar,
@@ -86,7 +98,6 @@ diesel::table! {
     }
 }
 
-
 diesel::define_sql_function!(fn last_insert_id() -> Integer);
 diesel::define_sql_function!(fn concat(x: Varchar, y: Varchar, z: Varchar) -> Varchar);
 diesel::define_sql_function!(fn count_words(x: Mediumtext, y: Varchar) -> Integer);
@@ -98,6 +109,7 @@ diesel::joinable!(speech -> transcript (transcript));
 diesel::joinable!(speaker -> party (party));
 diesel::joinable!(speaker -> gender (gender));
 diesel::joinable!(speaker -> province (province));
+diesel::joinable!(speaker -> class (class));
 diesel::joinable!(speaker -> riding (riding));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -107,6 +119,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     party,
     gender,
     province,
+    class,
     riding,
     transcript,
 );

@@ -1,5 +1,9 @@
 use crate::error::AppError;
 use common::models::*;
+use db::class::dsl::{
+    class, colour as class_colour, id as class_id, name as class_name,
+    total_words as class_total_words,
+};
 use db::gender::dsl::{
     colour as gender_colour, gender, id as gender_id, name as gender_name,
     total_words as gender_total_words,
@@ -157,6 +161,18 @@ pub async fn get_breakdown_word_count(
                 score(province_total_words, sum(count_words(text, word))),
             ))
             .load::<BreakdownRow>(connection),
+        BreakdownType::Class => speech
+            .filter(class_total_words.gt(0))
+            .inner_join(speaker.inner_join(class))
+            .group_by((class_id, class_name, class_colour, class_total_words))
+            .select((
+                class_id,
+                class_name,
+                class_colour,
+                sum(count_words(text, word)),
+                score(class_total_words, sum(count_words(text, word))),
+            ))
+            .load::<BreakdownRow>(connection),
         BreakdownType::Speaker => speech
             .filter(speaker_total_words.gt(0))
             .inner_join(speaker.inner_join(party))
@@ -235,11 +251,12 @@ pub async fn get_speeches(
     id: i32,
     word: &str,
 ) -> Result<Vec<SpeechResponse>, AppError> {
+    let word = format!("%{}%", word);
     let loaded = match breakdown_type {
         BreakdownType::Party => speech
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(party))
-            .filter(party_id.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .filter(party_id.eq(id).and(clean_text.like(word)))
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
@@ -247,7 +264,7 @@ pub async fn get_speeches(
         BreakdownType::Gender => speech
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(gender))
-            .filter(gender_id.eq(id).and(clean_text.like(format!("%{}%", word))))
+            .filter(gender_id.eq(id).and(clean_text.like(word)))
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
@@ -255,22 +272,22 @@ pub async fn get_speeches(
         BreakdownType::Province => speech
             .inner_join(speech_clean)
             .inner_join(speaker.inner_join(province))
-            .filter(
-                province_id
-                    .eq(id)
-                    .and(clean_text.like(format!("%{}%", word))),
-            )
+            .filter(province_id.eq(id).and(clean_text.like(word)))
+            .inner_join(transcript)
+            .select((speech_speaker, text, link, start, end))
+            .limit(100)
+            .load::<SpeechRow>(connection),
+        BreakdownType::Class => speech
+            .inner_join(speech_clean)
+            .inner_join(speaker.inner_join(class))
+            .filter(class_id.eq(id).and(clean_text.like(word)))
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)
             .load::<SpeechRow>(connection),
         BreakdownType::Speaker => speech
             .inner_join(speech_clean)
-            .filter(
-                speech_speaker
-                    .eq(id)
-                    .and(clean_text.like(format!("%{}%", word))),
-            )
+            .filter(speech_speaker.eq(id).and(clean_text.like(word)))
             .inner_join(transcript)
             .select((speech_speaker, text, link, start, end))
             .limit(100)

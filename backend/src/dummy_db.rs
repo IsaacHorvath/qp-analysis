@@ -1929,6 +1929,43 @@ pub fn dummy_get_breakdown_word_count(breakdown_type: BreakdownType) -> Vec<Brea
                 score: 1.2284546,
             },
         ],
+        BreakdownType::Class => vec![
+            BreakdownResponse {
+                id: 1,
+                name: "None".to_string(),
+                colour: "FFF169".to_string(),
+                count: 1,
+                score: 5.0,
+            },
+            BreakdownResponse {
+                id: 2,
+                name: "Homeowner".to_string(),
+                colour: "96ABE9".to_string(),
+                count: 2,
+                score: 4.0,
+            },
+            BreakdownResponse {
+                id: 3,
+                name: "Landlord".to_string(),
+                colour: "EA6D6A".to_string(),
+                count: 3,
+                score: 3.0,
+            },
+            BreakdownResponse {
+                id: 4,
+                name: "Investor".to_string(),
+                colour: "98CA66".to_string(),
+                count: 4,
+                score: 2.0,
+            },
+            BreakdownResponse {
+                id: 5,
+                name: "All".to_string(),
+                colour: "BF96E9".to_string(),
+                count: 5,
+                score: 1.0,
+            },
+        ],
         BreakdownType::Speaker => vec![
             BreakdownResponse {
                 id: 242,
