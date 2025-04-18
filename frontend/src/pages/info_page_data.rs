@@ -1,6 +1,6 @@
 use common::models::SpeechResponse;
-use time::PrimitiveDateTime;
 use time::macros::{date, time};
+use time::PrimitiveDateTime;
 
 // todo move this all to the backend
 
@@ -53,6 +53,18 @@ pub fn trump_province_data() -> &'static str {
         {"id":9,"name":"Ontario","colour":"EA6D6A","count":266,"score":3.496633},
         {"id":11,"name":"Quebec","colour":"87CEFA","count":155,"score":2.714894},
         {"id":12,"name":"Saskatchewan","colour":"FFF169","count":11,"score":1.2284546}
+    ]"#
+}
+
+/// Returns demo class data in json format for the word "economy".
+
+pub fn class_economy_data() -> &'static str {
+    r#"[
+        {"id":1,"name":"None","colour":"FFF169","count":329,"score":30.371454708},
+        {"id":2,"name":"Homeowner","colour":"96ABE9","count":1908,"score":33.825636468},
+        {"id":3,"name":"Landlord","colour":"EA6D6A","count":2112,"score":51.872734848},
+        {"id":4,"name":"Investor","colour":"98CA66","count":2479,"score":55.370639083},
+        {"id":5,"name":"All","colour":"BF96E9","count":4311,"score":51.288475698}
     ]"#
 }
 

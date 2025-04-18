@@ -1,15 +1,15 @@
-use yew::prelude::*;
-use common::models::{BreakdownType, BreakdownResponse, PopulationResponse};
-use gloo::utils::body;
-use crate::components::plot::{Plot, PlotSource};
 use crate::components::breakdown_engine::BreakdownEngine;
+use crate::components::plot::{Plot, PlotSource};
 use crate::components::population_engine::PopulationEngine;
-use crate::components::speech_overlay::SpeechOverlay;
 use crate::components::speech_box::SpeechBox;
+use crate::components::speech_overlay::SpeechOverlay;
 use crate::pages::error_page::error_page;
 use crate::pages::info_page_data::*;
-use crate::State;
 use crate::util::OverlaySelection;
+use crate::State;
+use common::models::{BreakdownResponse, BreakdownType, PopulationResponse};
+use gloo::utils::body;
+use yew::prelude::*;
 
 /// An info page explaining the tool, with embedded demo charts.
 
@@ -17,12 +17,16 @@ use crate::util::OverlaySelection;
 pub fn info_page() -> Html {
     let app_state = use_context::<State>();
     let failed = use_state(|| false);
-    
+
     let show_charts = use_state(|| false);
     let speech_overlay_word = use_state(|| String::from(""));
     let speech_overlay_visible = use_state(|| false);
-    let selection = use_state(|| OverlaySelection {breakdown_type: BreakdownType::Party, id: 0, heading: String::from("")});
-    
+    let selection = use_state(|| OverlaySelection {
+        breakdown_type: BreakdownType::Party,
+        id: 0,
+        heading: String::from(""),
+    });
+
     if let Some(state) = app_state {
         if state.provincial {
             // todo finish this and move it back to its own page
@@ -32,10 +36,10 @@ pub fn info_page() -> Html {
                     <p>{"This tool is a word search that lets you compare how different categories of provincial MMPs use language in the Ontario legislature. Click the search button at the top to try it out!"}</p>
                     <p>{"The rest of this info page stuck in development as I am currently working on the federal version of this tool hosted "}<a href="https://housewords.chunkerbunker.cc">{"here"}</a>{"."}</p>
                 </div>
-            }
+            };
         }
     }
-    
+
     let get_speeches = |w: String| {
         let speech_overlay_word = speech_overlay_word.clone();
         let speech_overlay_visible = speech_overlay_visible.clone();
@@ -47,7 +51,7 @@ pub fn info_page() -> Html {
             speech_overlay_visible.set(true);
         })
     };
-    
+
     let hide_speech_overlay = {
         let speech_overlay_visible = speech_overlay_visible.clone();
         Callback::from(move |_| {
@@ -55,24 +59,27 @@ pub fn info_page() -> Html {
             speech_overlay_visible.set(false);
         })
     };
-    
+
     let speech_data = speech_data();
-    
+
     let toggle_charts = |toggle| {
         let show_charts = show_charts.clone();
         Callback::from(move |_| {
-            if toggle {show_charts.set(!*show_charts);}
-            else {show_charts.set(false);}
+            if toggle {
+                show_charts.set(!*show_charts);
+            } else {
+                show_charts.set(false);
+            }
         })
     };
-            
+
     html! {
         if !*failed {
             <div class="info">
                 <h2>{"What is this tool?"}</h2>
-                
+
                 <p>{"This tool is a word search that lets you use basic charts to compare how different categories of Canadian MPs have used language in the House of Commons during the 44th parliament. You can access it by clicking the search button at the top of this page."}</p>
-                
+
                 <p>{"To use the search interface, type in a word or phrase into the box labeled \"search term\" and hit the submit button. For example, here's what will pop up with the default settings if you enter \"pipeline\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
@@ -100,11 +107,11 @@ pub fn info_page() -> Html {
                 <p>{"So what kind of meaning can we draw from this? Not much, and we have to be careful. There are a lot of limitations that come with using raw word counts to make assumptions about the kinds of things a group of people are talking about."}</p>
 
                 <p>{"Let's go back to our example. If you've ever followed Canadian federal politics, you might guess that members and supporters of the Green Party and the Conservative Party would have very different opinions on investment in and construction of oil and gas pipelines. So would it be fair to say that the Green Party spends a lot more of their (limited) time criticizing these pipelines than the Conservative Party spends defending them?"}</p>
-                
+
                 <p>{"Or are they even talking about oil and gas? Perhaps these MPs are talking about city pipelines, data pipelines, or using the term metaphorically."}</p>
 
                 <p>{"The best way to find out is to click on the bar directly! This will bring up a list of speeches, in chronological order, where a member of that party used the term you searched. Try it on the graph above. The first speech to come up if you click the Green party's bar looks like this:"}</p>
-                
+
                 <div class="info-speech">
                     <SpeechBox
                         name={"Elizabeth May"}
@@ -115,11 +122,11 @@ pub fn info_page() -> Html {
                         word={"pipeline".to_owned()}
                     />
                 </div>
-                
+
                 <p>{"If you'd like to read the original Hansard House Debates, or watch the accompanying videos, click the date at the top of the speech."}</p>
-                
+
                 <p>{"In this case the results do line up with our first assumption. Most of the times this raw word \"pipeline\" is used, the members are talking about oil and gas pipelines. The Green Party spends their time criticizing them from a number of angles, whereas the array of Conservative voices who mention them do so ocassionally, and in positive contexts."}</p>
-                    
+
                 <p>{"Sometimes the search results may not be what you expect, and that's why I encourage you to explore the actual text of the speeches. If you're the kind of Ontarian that doesn't pay much attention to Quebec politics, here is a chance to check out what members of the Bloc might be saying about pipelines."}</p>
 
                 <p>{"I mention the Bloc because this brings up another limitation: the data presented here is based on transcripts and "}<em>{"translations"}</em>{" provided by the House of Commons. That means that almost every word spoken in French has been translated into English, and you have to be careful not to make assumptions based on the specific kind of language that a French speaker is using when they don't have full control over the translated result."}</p>
@@ -152,6 +159,7 @@ pub fn info_page() -> Html {
                         </div>
                     </div>
                 </div>
+
                 <p>{"The gender breakdown is just like the party breakdown, but shows the words spoken by men, women, and one individual who identifies as Two-Spirit. Here's what the graph looks like for \"mental health\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
@@ -164,6 +172,8 @@ pub fn info_page() -> Html {
                     />
                 </div>
                 <p>{"I have chosen to place that one MP - Blake Desjarlais of the NDP - in his own bucket to respect Two-Spirit as a distinct gender identity, but doing my due diligence would involve contacting him to get his preference. So long as he is in a distinct category, the results you may try to read are going to be statistically skewed in many ways, and cannot be said to represent anything about all Two-Spirit people."}</p>
+
+                <hr class="divider" />
 
                 <p>{"The breakdown by province is fairly self-explanatory. Here's what it looks like when you search \"trump\":"}</p>
                 <div class="info-chart">
@@ -178,6 +188,36 @@ pub fn info_page() -> Html {
                 </div>
                 <p>{"In this case, I might be curious why Manitoba tops the list and Saskatchewan comes closer to the bottom."}</p>
 
+                <hr class="divider" />
+
+                <p>{"The breakdown by class is more complicated. Class is a loaded concept, and I am using it in a very crude sense here to refer to one's material stake in the economy. The implication is that a people who only work for wages, people who are building equity through homeownership, people who own productive capital, and people who collect rent are all disparate groups, with differing perspectives and interests in the direction of the economy and public policy. "}</p>
+
+                <p>
+                    {"The data I'm using here is from the excellent "}<a href="https://ismympalandlord.ca/en">{"is my MP a landlord"}</a>{" project. The buckets are as follows:"}
+                    <ul>
+                        <li><strong>{"None"}</strong>{" - none of the below"}</li>
+                        <li><strong>{"Homeowner"}</strong>{" - just a homeowner"}</li>
+                        <li><strong>{"Landlord"}</strong>{" - a homeowner and landlord, but no significant investments"}</li>
+                        <li><strong>{"Investor"}</strong>{" - a homeowner and with investments, but not a landlord"}</li>
+                        <li><strong>{"All"}</strong>{" - a homeowner, landlord, and with investments"}</li>
+                    </ul>
+                </p>
+
+                <p>{"Here's an example for the search term \"economy\":"}</p>
+                <div class="info-chart">
+                    <Plot<BreakdownEngine, BreakdownResponse>
+                        breakdown_type={BreakdownType::Class}
+                        source={PlotSource::Json(class_economy_data())}
+                        visible={true}
+                        word={""}
+                        show_counts={false}
+                        get_speeches={get_speeches("economy".to_owned())}
+                    />
+                </div>
+                <p>{"Note that homeowners and those with no assets tend to use this term less."}</p>
+
+                <hr class="divider" />
+
                 <p>{"The speaker breakdown shows the same kind of information but for individual speakers. It's limited to the top ten results and looks like this with the example search \"pharmacare\":"}</p>
                 <div class="info-chart">
                     <Plot<BreakdownEngine, BreakdownResponse>
@@ -191,8 +231,10 @@ pub fn info_page() -> Html {
                 </div>
                 <p>{"The bars are coloured according to their party affiliation, and the results are limited to the top ten hits. This can be a very useful way of finding particular MPs who have taken on particular issues either as representatives of their parties, because of constituent demand, or because of private interest in the subject."}</p>
 
+                <hr class="divider" />
+
                 <p>{"The population density scatterplot shows you how the word usage correlates with how dense an MPs riding is. Large remote ridings appear on the left, followed by rural and then increasingly urban ridings toward the right. Toronto Center, the most population dense riding, will always appear on the far right of the chart."}</p>
-                
+
                 <p>{"Organizing this information by population density doesn't usually show anything statistically meaningful, but you can use it to check out any outliers. One word that gives an interesting result is \"gaza\":"}</p>
                 <div class="info-chart">
                     <Plot<PopulationEngine, PopulationResponse>
@@ -205,7 +247,7 @@ pub fn info_page() -> Html {
                     />
                 </div>
                 <p>{"Note that almost all of the people who have actually spoken about Gaza in the house come from urban ridings. Of the few exceptions, way at the left side of the graph, none are Conservative. Each of these dots can be clicked to bring up the speeches made by the MP in that riding."}</p>
-                
+
                 if (*selection).id != 0 {
                     <SpeechOverlay
                         selection={(*selection).clone()}
