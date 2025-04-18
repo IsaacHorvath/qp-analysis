@@ -125,7 +125,7 @@ pub fn info_page() -> Html {
 
                 <p>{"If you'd like to read the original Hansard House Debates, or watch the accompanying videos, click the date at the top of the speech."}</p>
 
-                <p>{"In this case the results do line up with our first assumption. Most of the times this raw word \"pipeline\" is used, the members are talking about oil and gas pipelines. The Green Party spends their time criticizing them from a number of angles, whereas the array of Conservative voices who mention them do so ocassionally, and in positive contexts."}</p>
+                <p>{"In this case the results do line up with our first assumption. Most of the times this raw word \"pipeline\" is used, the members are talking about oil and gas pipelines. The Green Party spends their time criticizing them from a number of angles, whereas the array of Conservative voices who mention them do so occasionally, and in positive contexts."}</p>
 
                 <p>{"Sometimes the search results may not be what you expect, and that's why I encourage you to explore the actual text of the speeches. If you're the kind of Ontarian that doesn't pay much attention to Quebec politics, here is a chance to check out what members of the Bloc might be saying about pipelines."}</p>
 
